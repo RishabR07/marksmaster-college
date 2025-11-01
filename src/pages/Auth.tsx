@@ -37,13 +37,24 @@ const Auth = () => {
       if (error) throw error;
 
       if (data.user) {
-        const { data: roleData } = await supabase
+        const { data: roleData, error: roleError } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", data.user.id)
-          .single();
+          .maybeSingle();
 
-        if (roleData?.role === "teacher") {
+        if (roleError) {
+          console.error("Error fetching role:", roleError);
+          toast.error("Could not determine user role");
+          return;
+        }
+
+        if (!roleData) {
+          toast.error("No role assigned to this user. Please contact support.");
+          return;
+        }
+
+        if (roleData.role === "teacher") {
           navigate("/teacher");
         } else {
           navigate("/student");
