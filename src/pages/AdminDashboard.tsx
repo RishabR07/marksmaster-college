@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface UserData {
   id: string;
@@ -27,6 +28,9 @@ const AdminDashboard = () => {
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [editFullName, setEditFullName] = useState("");
   const [editRole, setEditRole] = useState<"admin" | "teacher" | "student">("student");
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!authLoading && (!user || userRole !== "admin")) {
@@ -123,6 +127,82 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleBulkImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast.error("Please upload a CSV file");
+      return;
+    }
+
+    setImporting(true);
+
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        throw new Error("CSV file must have a header row and at least one data row");
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim());
+      
+      const users = lines.slice(1).map(line => {
+        const values = line.split(',').map(v => v.trim());
+        const user: any = {};
+        
+        headers.forEach((header, index) => {
+          if (header === 'semester') {
+            user[header] = values[index] ? parseInt(values[index]) : undefined;
+          } else {
+            user[header] = values[index] || undefined;
+          }
+        });
+        
+        return user;
+      });
+
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) {
+        throw new Error("Not authenticated");
+      }
+
+      const { data, error } = await supabase.functions.invoke('bulk-create-users', {
+        body: { users },
+        headers: {
+          Authorization: `Bearer ${session.session.access_token}`
+        }
+      });
+
+      if (error) throw error;
+
+      const results = data as { success: string[]; failed: { email: string; error: string }[] };
+
+      if (results.success.length > 0) {
+        toast.success(`Successfully imported ${results.success.length} users`);
+      }
+
+      if (results.failed.length > 0) {
+        toast.error(`Failed to import ${results.failed.length} users. Check console for details.`);
+        console.error("Failed imports:", results.failed);
+      }
+
+      fetchUsers();
+      setShowBulkImport(false);
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+    } catch (error: any) {
+      toast.error("Import failed: " + error.message);
+      console.error("Bulk import error:", error);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -143,9 +223,15 @@ const AdminDashboard = () => {
             <h1 className="text-4xl font-bold text-foreground">Admin Panel</h1>
             <p className="text-muted-foreground">Manage users, roles, and profiles</p>
           </div>
-          <Button onClick={signOut} variant="outline">
-            Sign Out
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setShowBulkImport(true)} variant="secondary">
+              <Upload className="mr-2 h-4 w-4" />
+              Bulk Import
+            </Button>
+            <Button onClick={signOut} variant="outline">
+              Sign Out
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -236,6 +322,45 @@ const AdminDashboard = () => {
             </Table>
           </CardContent>
         </Card>
+
+        <Dialog open={showBulkImport} onOpenChange={setShowBulkImport}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Bulk Import Users</DialogTitle>
+              <DialogDescription>
+                Upload a CSV file to create multiple users at once
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Alert>
+                <AlertDescription>
+                  <strong>CSV Format:</strong> email,full_name,role,roll_number,department,semester
+                  <br />
+                  <strong>Roles:</strong> admin, teacher, student
+                  <br />
+                  <strong>Note:</strong> roll_number is required for students. department and semester are optional.
+                </AlertDescription>
+              </Alert>
+              <div className="space-y-2">
+                <Label htmlFor="csv-file">Select CSV File</Label>
+                <Input
+                  id="csv-file"
+                  type="file"
+                  accept=".csv"
+                  ref={fileInputRef}
+                  onChange={handleBulkImport}
+                  disabled={importing}
+                />
+              </div>
+              {importing && (
+                <div className="flex items-center justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                  <span>Importing users...</span>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
