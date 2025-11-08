@@ -54,7 +54,9 @@ const Auth = () => {
           return;
         }
 
-        if (roleData.role === "teacher") {
+        if (roleData.role === "admin") {
+          navigate("/admin");
+        } else if (roleData.role === "teacher") {
           navigate("/teacher");
         } else {
           navigate("/student");

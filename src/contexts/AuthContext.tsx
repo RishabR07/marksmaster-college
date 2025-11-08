@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  userRole: "teacher" | "student" | null;
+  userRole: "admin" | "teacher" | "student" | null;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -24,7 +24,7 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [userRole, setUserRole] = useState<"teacher" | "student" | null>(null);
+  const [userRole, setUserRole] = useState<"admin" | "teacher" | "student" | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       .maybeSingle();
 
     if (!error && data) {
-      setUserRole(data.role as "teacher" | "student");
+      setUserRole(data.role as "admin" | "teacher" | "student");
     } else {
       console.error("Error fetching role or no role found:", error);
       setUserRole(null);
