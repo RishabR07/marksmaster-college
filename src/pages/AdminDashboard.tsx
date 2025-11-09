@@ -10,8 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface UserData {
   id: string;
@@ -32,6 +33,7 @@ const AdminDashboard = () => {
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState<{ email: string; password: string }[]>([]);
   const [importErrors, setImportErrors] = useState<{ email: string; error: string }[]>([]);
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -126,6 +128,33 @@ const AdminDashboard = () => {
       fetchUsers();
     } catch (error: any) {
       toast.error("Failed to update role: " + error.message);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, email: string) => {
+    try {
+      setDeletingUser(userId);
+
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) {
+        throw new Error("Not authenticated");
+      }
+
+      const { error } = await supabase.functions.invoke('delete-user', {
+        body: { userId },
+        headers: {
+          Authorization: `Bearer ${session.session.access_token}`
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success(`User ${email} deleted successfully`);
+      fetchUsers();
+    } catch (error: any) {
+      toast.error("Failed to delete user: " + error.message);
+    } finally {
+      setDeletingUser(null);
     }
   };
 
@@ -249,6 +278,7 @@ const AdminDashboard = () => {
                   <TableHead>Full Name</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Actions</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -317,6 +347,40 @@ const AdminDashboard = () => {
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
+                    </TableCell>
+                    <TableCell>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={deletingUser === userData.id}
+                          >
+                            {deletingUser === userData.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete {userData.email}? This action cannot be undone and will permanently delete the user account and all associated data.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteUser(userData.id, userData.email)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))}
