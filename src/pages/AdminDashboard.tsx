@@ -31,6 +31,7 @@ const AdminDashboard = () => {
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResults, setImportResults] = useState<{ email: string; password: string }[]>([]);
+  const [importErrors, setImportErrors] = useState<{ email: string; error: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -186,8 +187,8 @@ const AdminDashboard = () => {
       }
 
       if (results.failed.length > 0) {
-        toast.error(`Failed to import ${results.failed.length} users. Check console for details.`);
-        console.error("Failed imports:", results.failed);
+        toast.error(`Failed to import ${results.failed.length} users. See details below.`);
+        setImportErrors(results.failed);
       }
 
       fetchUsers();
@@ -326,7 +327,10 @@ const AdminDashboard = () => {
 
         <Dialog open={showBulkImport} onOpenChange={(open) => {
           setShowBulkImport(open);
-          if (!open) setImportResults([]);
+          if (!open) {
+            setImportResults([]);
+            setImportErrors([]);
+          }
         }}>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
@@ -336,7 +340,7 @@ const AdminDashboard = () => {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              {importResults.length === 0 ? (
+              {importResults.length === 0 && importErrors.length === 0 ? (
                 <>
                   <Alert>
                     <AlertDescription>
@@ -367,43 +371,66 @@ const AdminDashboard = () => {
                 </>
               ) : (
                 <div className="space-y-4">
-                  <Alert>
-                    <AlertDescription>
-                      <strong>Important:</strong> Save these credentials now. They won't be shown again.
-                    </AlertDescription>
-                  </Alert>
-                  <div className="border rounded-lg p-4 space-y-2 max-h-96 overflow-y-auto">
-                    <h3 className="font-semibold mb-2">User Credentials</h3>
-                    {importResults.map((result, index) => (
-                      <div key={index} className="p-3 bg-muted rounded space-y-1 text-sm">
-                        <div><strong>Email:</strong> {result.email}</div>
-                        <div className="flex items-center gap-2">
-                          <strong>Password:</strong> 
-                          <code className="bg-background px-2 py-1 rounded">{result.password}</code>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              navigator.clipboard.writeText(result.password);
-                              toast.success("Password copied!");
-                            }}
-                          >
-                            Copy
-                          </Button>
-                        </div>
+                  {importResults.length > 0 && (
+                    <>
+                      <Alert>
+                        <AlertDescription>
+                          <strong>Important:</strong> Save these credentials now. They won't be shown again.
+                        </AlertDescription>
+                      </Alert>
+                      <div className="border rounded-lg p-4 space-y-2 max-h-96 overflow-y-auto">
+                        <h3 className="font-semibold mb-2">Successfully Created Users</h3>
+                        {importResults.map((result, index) => (
+                          <div key={index} className="p-3 bg-muted rounded space-y-1 text-sm">
+                            <div><strong>Email:</strong> {result.email}</div>
+                            <div className="flex items-center gap-2">
+                              <strong>Password:</strong> 
+                              <code className="bg-background px-2 py-1 rounded">{result.password}</code>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(result.password);
+                                  toast.success("Password copied!");
+                                }}
+                              >
+                                Copy
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  <Button
-                    onClick={() => {
-                      const text = importResults.map(r => `Email: ${r.email}\nPassword: ${r.password}`).join('\n\n');
-                      navigator.clipboard.writeText(text);
-                      toast.success("All credentials copied!");
-                    }}
-                    className="w-full"
-                  >
-                    Copy All Credentials
-                  </Button>
+                      <Button
+                        onClick={() => {
+                          const text = importResults.map(r => `Email: ${r.email}\nPassword: ${r.password}`).join('\n\n');
+                          navigator.clipboard.writeText(text);
+                          toast.success("All credentials copied!");
+                        }}
+                        className="w-full"
+                      >
+                        Copy All Credentials
+                      </Button>
+                    </>
+                  )}
+                  
+                  {importErrors.length > 0 && (
+                    <>
+                      <Alert variant="destructive">
+                        <AlertDescription>
+                          <strong>Failed to Import {importErrors.length} Users</strong>
+                        </AlertDescription>
+                      </Alert>
+                      <div className="border border-destructive rounded-lg p-4 space-y-2 max-h-96 overflow-y-auto">
+                        <h3 className="font-semibold mb-2 text-destructive">Import Errors</h3>
+                        {importErrors.map((error, index) => (
+                          <div key={index} className="p-3 bg-destructive/10 rounded space-y-1 text-sm">
+                            <div><strong>Email:</strong> {error.email}</div>
+                            <div className="text-destructive"><strong>Error:</strong> {error.error}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
