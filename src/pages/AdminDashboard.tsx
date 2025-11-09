@@ -30,6 +30,7 @@ const AdminDashboard = () => {
   const [editRole, setEditRole] = useState<"admin" | "teacher" | "student">("student");
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importResults, setImportResults] = useState<{ email: string; password: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -177,10 +178,11 @@ const AdminDashboard = () => {
 
       if (error) throw error;
 
-      const results = data as { success: string[]; failed: { email: string; error: string }[] };
+      const results = data as { success: { email: string; password: string }[]; failed: { email: string; error: string }[] };
 
       if (results.success.length > 0) {
         toast.success(`Successfully imported ${results.success.length} users`);
+        setImportResults(results.success);
       }
 
       if (results.failed.length > 0) {
@@ -189,7 +191,6 @@ const AdminDashboard = () => {
       }
 
       fetchUsers();
-      setShowBulkImport(false);
       
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -323,8 +324,11 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        <Dialog open={showBulkImport} onOpenChange={setShowBulkImport}>
-          <DialogContent className="max-w-2xl">
+        <Dialog open={showBulkImport} onOpenChange={(open) => {
+          setShowBulkImport(open);
+          if (!open) setImportResults([]);
+        }}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Bulk Import Users</DialogTitle>
               <DialogDescription>
@@ -332,30 +336,74 @@ const AdminDashboard = () => {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <Alert>
-                <AlertDescription>
-                  <strong>CSV Format:</strong> email,full_name,role,roll_number,department,semester
-                  <br />
-                  <strong>Roles:</strong> admin, teacher, student
-                  <br />
-                  <strong>Note:</strong> roll_number is required for students. department and semester are optional.
-                </AlertDescription>
-              </Alert>
-              <div className="space-y-2">
-                <Label htmlFor="csv-file">Select CSV File</Label>
-                <Input
-                  id="csv-file"
-                  type="file"
-                  accept=".csv"
-                  ref={fileInputRef}
-                  onChange={handleBulkImport}
-                  disabled={importing}
-                />
-              </div>
-              {importing && (
-                <div className="flex items-center justify-center p-4">
-                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                  <span>Importing users...</span>
+              {importResults.length === 0 ? (
+                <>
+                  <Alert>
+                    <AlertDescription>
+                      <strong>CSV Format:</strong> email,full_name,role,roll_number,department,semester
+                      <br />
+                      <strong>Roles:</strong> admin, teacher, student
+                      <br />
+                      <strong>Note:</strong> roll_number is required for students. department and semester are optional.
+                    </AlertDescription>
+                  </Alert>
+                  <div className="space-y-2">
+                    <Label htmlFor="csv-file">Select CSV File</Label>
+                    <Input
+                      id="csv-file"
+                      type="file"
+                      accept=".csv"
+                      ref={fileInputRef}
+                      onChange={handleBulkImport}
+                      disabled={importing}
+                    />
+                  </div>
+                  {importing && (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                      <span>Importing users...</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="space-y-4">
+                  <Alert>
+                    <AlertDescription>
+                      <strong>Important:</strong> Save these credentials now. They won't be shown again.
+                    </AlertDescription>
+                  </Alert>
+                  <div className="border rounded-lg p-4 space-y-2 max-h-96 overflow-y-auto">
+                    <h3 className="font-semibold mb-2">User Credentials</h3>
+                    {importResults.map((result, index) => (
+                      <div key={index} className="p-3 bg-muted rounded space-y-1 text-sm">
+                        <div><strong>Email:</strong> {result.email}</div>
+                        <div className="flex items-center gap-2">
+                          <strong>Password:</strong> 
+                          <code className="bg-background px-2 py-1 rounded">{result.password}</code>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              navigator.clipboard.writeText(result.password);
+                              toast.success("Password copied!");
+                            }}
+                          >
+                            Copy
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    onClick={() => {
+                      const text = importResults.map(r => `Email: ${r.email}\nPassword: ${r.password}`).join('\n\n');
+                      navigator.clipboard.writeText(text);
+                      toast.success("All credentials copied!");
+                    }}
+                    className="w-full"
+                  >
+                    Copy All Credentials
+                  </Button>
                 </div>
               )}
             </div>

@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     console.log(`Processing ${users.length} users for bulk import`)
 
     const results = {
-      success: [] as string[],
+      success: [] as { email: string; password: string }[],
       failed: [] as { email: string; error: string }[]
     }
 
@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
           }
         }
 
-        results.success.push(userData.email)
+        results.success.push({ email: userData.email, password: tempPassword })
         console.log(`Successfully processed user: ${userData.email}`)
 
       } catch (error: any) {
