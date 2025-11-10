@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Upload, Trash2, KeyRound } from "lucide-react";
+import { Loader2, Upload, Trash2, KeyRound, Trash } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -36,6 +36,8 @@ const AdminDashboard = () => {
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
   const [resettingPassword, setResettingPassword] = useState<string | null>(null);
   const [resetPasswordResult, setResetPasswordResult] = useState<{ email: string; password: string } | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [deletingBulk, setDeletingBulk] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -191,6 +193,76 @@ const AdminDashboard = () => {
     }
   };
 
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUsers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedUsers.size === users.length) {
+      setSelectedUsers(new Set());
+    } else {
+      setSelectedUsers(new Set(users.map(u => u.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedUsers.size === 0) {
+      toast.error("No users selected");
+      return;
+    }
+
+    try {
+      setDeletingBulk(true);
+      const { data: session } = await supabase.auth.getSession();
+      
+      if (!session.session) {
+        throw new Error("Not authenticated");
+      }
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const userId of selectedUsers) {
+        try {
+          const { error } = await supabase.functions.invoke('delete-user', {
+            body: { userId },
+            headers: {
+              Authorization: `Bearer ${session.session.access_token}`
+            }
+          });
+
+          if (error) throw error;
+          successCount++;
+        } catch (error) {
+          console.error(`Failed to delete user ${userId}:`, error);
+          errorCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`Successfully deleted ${successCount} user(s)`);
+      }
+      if (errorCount > 0) {
+        toast.error(`Failed to delete ${errorCount} user(s)`);
+      }
+
+      setSelectedUsers(new Set());
+      fetchUsers();
+    } catch (error: any) {
+      toast.error("Bulk delete failed: " + error.message);
+    } finally {
+      setDeletingBulk(false);
+    }
+  };
+
   const handleBulkImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -300,13 +372,56 @@ const AdminDashboard = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>User Management</CardTitle>
-            <CardDescription>View and manage all users in the system</CardDescription>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>View and manage all users in the system</CardDescription>
+              </div>
+              {selectedUsers.size > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={deletingBulk}>
+                      {deletingBulk ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Trash className="h-4 w-4 mr-2" />
+                      )}
+                      Delete Selected ({selectedUsers.size})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Multiple Users</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete {selectedUsers.size} selected user(s)? This action cannot be undone and will permanently delete all user accounts and associated data.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleBulkDelete}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete All
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <input
+                      type="checkbox"
+                      checked={users.length > 0 && selectedUsers.size === users.length}
+                      onChange={toggleSelectAll}
+                      className="cursor-pointer"
+                    />
+                  </TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Full Name</TableHead>
                   <TableHead>Role</TableHead>
@@ -317,6 +432,14 @@ const AdminDashboard = () => {
               <TableBody>
                 {users.map((userData) => (
                   <TableRow key={userData.id}>
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.has(userData.id)}
+                        onChange={() => toggleUserSelection(userData.id)}
+                        className="cursor-pointer"
+                      />
+                    </TableCell>
                     <TableCell>{userData.email}</TableCell>
                     <TableCell>{userData.full_name}</TableCell>
                     <TableCell>
