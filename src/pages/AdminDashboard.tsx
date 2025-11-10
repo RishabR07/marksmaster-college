@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Upload, Trash2 } from "lucide-react";
+import { Loader2, Upload, Trash2, KeyRound } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -34,6 +34,8 @@ const AdminDashboard = () => {
   const [importResults, setImportResults] = useState<{ email: string; password: string }[]>([]);
   const [importErrors, setImportErrors] = useState<{ email: string; error: string }[]>([]);
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
+  const [resettingPassword, setResettingPassword] = useState<string | null>(null);
+  const [resetPasswordResult, setResetPasswordResult] = useState<{ email: string; password: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -155,6 +157,37 @@ const AdminDashboard = () => {
       toast.error("Failed to delete user: " + error.message);
     } finally {
       setDeletingUser(null);
+    }
+  };
+
+  const handleResetPassword = async (userId: string, userEmail: string) => {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      
+      if (!session.session) {
+        toast.error("You must be logged in to reset passwords");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("reset-user-password", {
+        body: { userId },
+        headers: {
+          Authorization: `Bearer ${session.session.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.password) {
+        setResetPasswordResult({ email: userEmail, password: data.password });
+        toast.success("Password reset successfully");
+        setResettingPassword(null);
+      } else {
+        throw new Error("Failed to reset password");
+      }
+    } catch (error: any) {
+      console.error("Error resetting password:", error);
+      toast.error(error.message || "Failed to reset password");
     }
   };
 
@@ -349,38 +382,80 @@ const AdminDashboard = () => {
                       </Dialog>
                     </TableCell>
                     <TableCell>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            disabled={deletingUser === userData.id}
-                          >
-                            {deletingUser === userData.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete User</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete {userData.email}? This action cannot be undone and will permanently delete the user account and all associated data.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteUser(userData.id, userData.email)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      <div className="flex items-center gap-2">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={resettingPassword === userData.id}
                             >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                              {resettingPassword === userData.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <KeyRound className="h-4 w-4 mr-2" />
+                                  Reset Password
+                                </>
+                              )}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Reset Password</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Generate a new random password for {userData.email}? The new password will be displayed for you to share with the user.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={() => setResettingPassword(null)}>
+                                Cancel
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => {
+                                  setResettingPassword(userData.id);
+                                  handleResetPassword(userData.id, userData.email);
+                                }}
+                              >
+                                Reset Password
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              disabled={deletingUser === userData.id}
+                            >
+                              {deletingUser === userData.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete User</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete {userData.email}? This action cannot be undone and will permanently delete the user account and all associated data.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteUser(userData.id, userData.email)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -497,6 +572,59 @@ const AdminDashboard = () => {
                   )}
                 </div>
               )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!resetPasswordResult} onOpenChange={(open) => !open && setResetPasswordResult(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Password Reset Successful</DialogTitle>
+              <DialogDescription>
+                New password generated. Copy and share this with the user.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={resetPasswordResult?.email || ""}
+                    readOnly
+                    className="bg-muted"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(resetPasswordResult?.email || "");
+                      toast.success("Email copied!");
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>New Password</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={resetPasswordResult?.password || ""}
+                    readOnly
+                    className="bg-muted font-mono"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(resetPasswordResult?.password || "");
+                      toast.success("Password copied!");
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
