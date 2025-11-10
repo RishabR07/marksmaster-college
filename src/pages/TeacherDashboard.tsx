@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { LogOut, BookOpen, Users, FileText } from "lucide-react";
+import { LogOut, BookOpen, Users, FileText, Upload, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Subject {
@@ -23,13 +26,23 @@ interface Student {
   profiles: { full_name: string };
 }
 
+interface EnrolledStudent extends Student {
+  enrollment_id: string;
+}
+
 const TeacherDashboard = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [enrolledStudents, setEnrolledStudents] = useState<EnrolledStudent[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [selectedStudent, setSelectedStudent] = useState<string>("");
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResults, setImportResults] = useState<{ roll_number: string; action: string }[]>([]);
+  const [importErrors, setImportErrors] = useState<{ roll_number: string; error: string }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form states
   const [subjectName, setSubjectName] = useState("");
@@ -50,6 +63,12 @@ const TeacherDashboard = () => {
       fetchStudents();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (selectedSubject) {
+      fetchEnrolledStudents();
+    }
+  }, [selectedSubject]);
 
   const fetchSubjects = async () => {
     const { data, error } = await supabase
@@ -91,6 +110,54 @@ const TeacherDashboard = () => {
       }));
 
       setStudents(studentsWithProfiles);
+    }
+  };
+
+  const fetchEnrolledStudents = async () => {
+    if (!selectedSubject) {
+      setEnrolledStudents([]);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("enrollments")
+      .select(`
+        id,
+        student_id,
+        students!inner(
+          id,
+          roll_number,
+          department,
+          student_user_id
+        )
+      `)
+      .eq("subject_id", selectedSubject);
+
+    if (error) {
+      toast.error("Failed to fetch enrolled students");
+      return;
+    }
+
+    if (data) {
+      const userIds = data.map((e: any) => e.students.student_user_id);
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
+
+      const profileMap = new Map(profilesData?.map(p => [p.id, p.full_name]));
+
+      const enrolled = data.map((enrollment: any) => ({
+        enrollment_id: enrollment.id,
+        id: enrollment.students.id,
+        roll_number: enrollment.students.roll_number,
+        department: enrollment.students.department,
+        profiles: {
+          full_name: profileMap.get(enrollment.students.student_user_id) || "Unknown"
+        }
+      }));
+
+      setEnrolledStudents(enrolled);
     }
   };
 
@@ -139,6 +206,85 @@ const TeacherDashboard = () => {
     }
   };
 
+  const handleBulkImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast.error("Please upload a CSV file");
+      return;
+    }
+
+    if (!selectedSubject) {
+      toast.error("Please select a subject first");
+      return;
+    }
+
+    setImporting(true);
+
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        throw new Error("CSV file must have a header row and at least one data row");
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim());
+      
+      const marks = lines.slice(1).map(line => {
+        const values = line.split(',').map(v => v.trim());
+        const mark: any = {};
+        
+        headers.forEach((header, index) => {
+          if (header === 'marks' || header === 'max_marks') {
+            mark[header] = values[index] ? parseFloat(values[index]) : undefined;
+          } else {
+            mark[header] = values[index] || undefined;
+          }
+        });
+        
+        return mark;
+      });
+
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) {
+        throw new Error("Not authenticated");
+      }
+
+      const { data, error } = await supabase.functions.invoke('bulk-import-marks', {
+        body: { marks, subjectId: selectedSubject },
+        headers: {
+          Authorization: `Bearer ${session.session.access_token}`
+        }
+      });
+
+      if (error) throw error;
+
+      const results = data as { success: { roll_number: string; action: string }[]; failed: { roll_number: string; error: string }[] };
+
+      if (results.success.length > 0) {
+        toast.success(`Successfully imported ${results.success.length} marks`);
+        setImportResults(results.success);
+      }
+
+      if (results.failed.length > 0) {
+        toast.error(`Failed to import ${results.failed.length} marks. See details below.`);
+        setImportErrors(results.failed);
+      }
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+    } catch (error: any) {
+      toast.error("Import failed: " + error.message);
+      console.error("Bulk import error:", error);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card shadow-[var(--shadow-sm)]">
@@ -156,10 +302,14 @@ const TeacherDashboard = () => {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="subjects" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
             <TabsTrigger value="subjects">
               <BookOpen className="h-4 w-4 mr-2" />
               Subjects
+            </TabsTrigger>
+            <TabsTrigger value="enrollments">
+              <Users className="h-4 w-4 mr-2" />
+              Enrollments
             </TabsTrigger>
             <TabsTrigger value="marks">
               <FileText className="h-4 w-4 mr-2" />
@@ -225,11 +375,142 @@ const TeacherDashboard = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="enrollments" className="space-y-6">
+            <Card className="shadow-[var(--shadow-md)]">
+              <CardHeader>
+                <CardTitle>Manage Enrollments</CardTitle>
+                <CardDescription>Enroll students in your subjects</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="enrollment-subject">Subject</Label>
+                      <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Subject" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subjects.map((subject) => (
+                            <SelectItem key={subject.id} value={subject.id}>
+                              {subject.subject_name} ({subject.subject_code})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="enrollment-student">Student to Enroll</Label>
+                      <Select 
+                        value={selectedStudent} 
+                        onValueChange={async (studentId) => {
+                          if (!selectedSubject) {
+                            toast.error("Please select a subject first");
+                            return;
+                          }
+                          
+                          const { error } = await supabase
+                            .from("enrollments")
+                            .insert({
+                              student_id: studentId,
+                              subject_id: selectedSubject
+                            });
+
+                          if (error) {
+                            if (error.code === '23505') {
+                              toast.error("Student already enrolled in this subject");
+                            } else {
+                              toast.error(error.message);
+                            }
+                          } else {
+                            toast.success("Student enrolled successfully!");
+                            fetchEnrolledStudents();
+                          }
+                        }}
+                        disabled={!selectedSubject}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Student" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {students.map((student) => (
+                            <SelectItem key={student.id} value={student.id}>
+                              {student.profiles.full_name} ({student.roll_number})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {selectedSubject && (
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold mb-4">
+                        Enrolled Students ({enrolledStudents.length})
+                      </h3>
+                      <div className="border rounded-lg divide-y max-h-96 overflow-y-auto">
+                        {enrolledStudents.length === 0 ? (
+                          <p className="text-muted-foreground text-center py-8">
+                            No students enrolled yet
+                          </p>
+                        ) : (
+                          enrolledStudents.map((student) => (
+                            <div
+                              key={student.id}
+                              className="flex justify-between items-center p-4 hover:bg-muted/50"
+                            >
+                              <div>
+                                <p className="font-medium">{student.profiles.full_name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {student.roll_number} | {student.department}
+                                </p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={async () => {
+                                  const { error } = await supabase
+                                    .from("enrollments")
+                                    .delete()
+                                    .eq("id", student.enrollment_id);
+
+                                  if (error) {
+                                    toast.error(error.message);
+                                  } else {
+                                    toast.success("Student removed from subject");
+                                    fetchEnrolledStudents();
+                                  }
+                                }}
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="marks" className="space-y-6">
             <Card className="shadow-[var(--shadow-md)]">
               <CardHeader>
-                <CardTitle>Add Marks</CardTitle>
-                <CardDescription>Enter marks for your students</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Add Marks</CardTitle>
+                    <CardDescription>Enter marks for your students</CardDescription>
+                  </div>
+                  {selectedSubject && (
+                    <Button onClick={() => setShowBulkImport(true)} variant="secondary">
+                      <Upload className="mr-2 h-4 w-4" />
+                      Bulk Import
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleAddMarks} className="space-y-4">
@@ -252,16 +533,17 @@ const TeacherDashboard = () => {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="student">Student</Label>
+                      <Label htmlFor="student">Student {selectedSubject && `(${enrolledStudents.length} enrolled)`}</Label>
                       <select
                         id="student"
                         className="w-full rounded-md border border-input bg-background px-3 py-2"
                         value={selectedStudent}
                         onChange={(e) => setSelectedStudent(e.target.value)}
                         required
+                        disabled={!selectedSubject}
                       >
                         <option value="">Select Student</option>
-                        {students.map((student) => (
+                        {(selectedSubject ? enrolledStudents : students).map((student) => (
                           <option key={student.id} value={student.id}>
                             {student.profiles.full_name} ({student.roll_number})
                           </option>
@@ -310,6 +592,94 @@ const TeacherDashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <Dialog open={showBulkImport} onOpenChange={(open) => {
+          setShowBulkImport(open);
+          if (!open) {
+            setImportResults([]);
+            setImportErrors([]);
+          }
+        }}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Bulk Import Marks</DialogTitle>
+              <DialogDescription>
+                Upload a CSV file to import marks for multiple students at once
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {importResults.length === 0 && importErrors.length === 0 ? (
+                <>
+                  <Alert>
+                    <AlertDescription>
+                      <strong>CSV Format:</strong> roll_number,marks,max_marks,assessment_type,assessment_date
+                      <br />
+                      <strong>Example:</strong> 4NM21CS001,85,100,Mid-term,2024-11-10
+                      <br />
+                      <strong>Note:</strong> Only enrolled students can receive marks. assessment_date is optional (defaults to today).
+                    </AlertDescription>
+                  </Alert>
+                  {!selectedSubject && (
+                    <Alert>
+                      <AlertDescription className="text-destructive">
+                        Please select a subject from the "Add Marks" tab before importing.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="csv-file">Select CSV File</Label>
+                    <Input
+                      id="csv-file"
+                      type="file"
+                      accept=".csv"
+                      ref={fileInputRef}
+                      onChange={handleBulkImport}
+                      disabled={importing || !selectedSubject}
+                    />
+                  </div>
+                  {importing && (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                      <span>Importing marks...</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="space-y-4">
+                  {importResults.length > 0 && (
+                    <div className="border rounded-lg p-4 space-y-2 max-h-60 overflow-y-auto">
+                      <h3 className="font-semibold mb-2 text-green-600">Successfully Imported ({importResults.length})</h3>
+                      {importResults.map((result, index) => (
+                        <div key={index} className="p-3 bg-green-50 rounded space-y-1 text-sm">
+                          <div><strong>Roll Number:</strong> {result.roll_number}</div>
+                          <div className="text-muted-foreground"><strong>Action:</strong> {result.action}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {importErrors.length > 0 && (
+                    <>
+                      <Alert>
+                        <AlertDescription className="text-destructive">
+                          <strong>Some marks failed to import.</strong> Review errors below.
+                        </AlertDescription>
+                      </Alert>
+                      <div className="border border-destructive rounded-lg p-4 space-y-2 max-h-60 overflow-y-auto">
+                        <h3 className="font-semibold mb-2 text-destructive">Import Errors ({importErrors.length})</h3>
+                        {importErrors.map((error, index) => (
+                          <div key={index} className="p-3 bg-destructive/10 rounded space-y-1 text-sm">
+                            <div><strong>Roll Number:</strong> {error.roll_number}</div>
+                            <div className="text-destructive"><strong>Error:</strong> {error.error}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

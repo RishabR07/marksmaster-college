@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      enrollments: {
+        Row: {
+          enrolled_at: string | null
+          id: string
+          student_id: string
+          subject_id: string
+        }
+        Insert: {
+          enrolled_at?: string | null
+          id?: string
+          student_id: string
+          subject_id: string
+        }
+        Update: {
+          enrolled_at?: string | null
+          id?: string
+          student_id?: string
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollments_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marks: {
         Row: {
           assessment_date: string | null
