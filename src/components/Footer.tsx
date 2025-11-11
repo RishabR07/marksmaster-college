@@ -36,8 +36,19 @@ const Footer = () => {
           </div>
         </div>
         
-        <div className="mt-8 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          <p>&copy; {currentYear} College Assessment System. All rights reserved.</p>
+        <div className="mt-8 pt-8 border-t border-border text-center">
+          <p className="pt-4 text-center text-xs md:text-sm pb-5 text-muted-foreground">
+            Copyright 2025 ©{" "}
+            <a
+              href="https://rishabshetty.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              Rishab
+            </a>
+            . All Rights Reserved.
+          </p>
         </div>
       </div>
     </footer>
