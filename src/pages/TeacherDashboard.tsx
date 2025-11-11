@@ -39,10 +39,15 @@ const TeacherDashboard = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [selectedStudent, setSelectedStudent] = useState<string>("");
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [showStudentBulkImport, setShowStudentBulkImport] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importingStudents, setImportingStudents] = useState(false);
   const [importResults, setImportResults] = useState<{ roll_number: string; action: string }[]>([]);
   const [importErrors, setImportErrors] = useState<{ roll_number: string; error: string }[]>([]);
+  const [studentImportResults, setStudentImportResults] = useState<{ email: string; password: string; roll_number: string }[]>([]);
+  const [studentImportErrors, setStudentImportErrors] = useState<{ email: string; roll_number: string; error: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const studentFileInputRef = useRef<HTMLInputElement>(null);
 
   // Form states
   const [subjectName, setSubjectName] = useState("");
@@ -285,6 +290,86 @@ const TeacherDashboard = () => {
     }
   };
 
+  const handleStudentBulkImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast.error("Please upload a CSV file");
+      return;
+    }
+
+    setImportingStudents(true);
+    setStudentImportResults([]);
+    setStudentImportErrors([]);
+
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        throw new Error("CSV file must have a header row and at least one data row");
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim());
+      
+      const students = lines.slice(1).map(line => {
+        const values = line.split(',').map(v => v.trim());
+        const student: any = {};
+        
+        headers.forEach((header, index) => {
+          if (header === 'semester') {
+            student[header] = values[index] ? parseInt(values[index]) : undefined;
+          } else {
+            student[header] = values[index] || undefined;
+          }
+        });
+        
+        return student;
+      });
+
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) {
+        throw new Error("Not authenticated");
+      }
+
+      const { data, error } = await supabase.functions.invoke('bulk-import-students', {
+        body: { students },
+        headers: {
+          Authorization: `Bearer ${session.session.access_token}`
+        }
+      });
+
+      if (error) throw error;
+
+      const results = data as { 
+        success: { email: string; password: string; roll_number: string }[]; 
+        failed: { email: string; roll_number: string; error: string }[] 
+      };
+
+      if (results.success.length > 0) {
+        toast.success(`Successfully imported ${results.success.length} students`);
+        setStudentImportResults(results.success);
+        fetchStudents();
+      }
+
+      if (results.failed.length > 0) {
+        toast.error(`Failed to import ${results.failed.length} students. See details below.`);
+        setStudentImportErrors(results.failed);
+      }
+
+      if (studentFileInputRef.current) {
+        studentFileInputRef.current.value = '';
+      }
+
+    } catch (error: any) {
+      toast.error("Import failed: " + error.message);
+      console.error("Student bulk import error:", error);
+    } finally {
+      setImportingStudents(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card shadow-[var(--shadow-sm)]">
@@ -378,8 +463,16 @@ const TeacherDashboard = () => {
           <TabsContent value="enrollments" className="space-y-6">
             <Card className="shadow-[var(--shadow-md)]">
               <CardHeader>
-                <CardTitle>Manage Enrollments</CardTitle>
-                <CardDescription>Enroll students in your subjects</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Manage Enrollments</CardTitle>
+                    <CardDescription>Enroll students in your subjects</CardDescription>
+                  </div>
+                  <Button onClick={() => setShowStudentBulkImport(true)} variant="secondary">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Bulk Import Students
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -669,6 +762,96 @@ const TeacherDashboard = () => {
                         {importErrors.map((error, index) => (
                           <div key={index} className="p-3 bg-destructive/10 rounded space-y-1 text-sm">
                             <div><strong>Roll Number:</strong> {error.roll_number}</div>
+                            <div className="text-destructive"><strong>Error:</strong> {error.error}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showStudentBulkImport} onOpenChange={(open) => {
+          setShowStudentBulkImport(open);
+          if (!open) {
+            setStudentImportResults([]);
+            setStudentImportErrors([]);
+          }
+        }}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Bulk Import Students</DialogTitle>
+              <DialogDescription>
+                Upload a CSV file to create multiple student accounts at once
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {studentImportResults.length === 0 && studentImportErrors.length === 0 ? (
+                <>
+                  <Alert>
+                    <AlertDescription>
+                      <strong>CSV Format:</strong> full_name,email,roll_number,department,semester
+                      <br />
+                      <strong>Example:</strong> John Doe,john@example.com,4NM21CS001,Computer Science,5
+                      <br />
+                      <strong>Note:</strong> department and semester are optional. Each student will get a temporary password that will be displayed after import.
+                    </AlertDescription>
+                  </Alert>
+                  <div className="space-y-2">
+                    <Label htmlFor="student-csv-file">Select CSV File</Label>
+                    <Input
+                      id="student-csv-file"
+                      type="file"
+                      accept=".csv"
+                      ref={studentFileInputRef}
+                      onChange={handleStudentBulkImport}
+                      disabled={importingStudents}
+                    />
+                  </div>
+                  {importingStudents && (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                      <span>Importing students...</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="space-y-4">
+                  {studentImportResults.length > 0 && (
+                    <div className="border rounded-lg p-4 space-y-2 max-h-60 overflow-y-auto">
+                      <h3 className="font-semibold mb-2 text-green-600">Successfully Imported ({studentImportResults.length})</h3>
+                      <Alert>
+                        <AlertDescription className="text-sm">
+                          <strong>Important:</strong> Save these temporary passwords! Students should change them on first login.
+                        </AlertDescription>
+                      </Alert>
+                      {studentImportResults.map((result, index) => (
+                        <div key={index} className="p-3 bg-green-50 rounded space-y-1 text-sm">
+                          <div><strong>Roll Number:</strong> {result.roll_number}</div>
+                          <div><strong>Email:</strong> {result.email}</div>
+                          <div className="font-mono bg-white p-2 rounded border">
+                            <strong>Password:</strong> {result.password}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {studentImportErrors.length > 0 && (
+                    <>
+                      <Alert>
+                        <AlertDescription className="text-destructive">
+                          <strong>Some students failed to import.</strong> Review errors below.
+                        </AlertDescription>
+                      </Alert>
+                      <div className="border border-destructive rounded-lg p-4 space-y-2 max-h-60 overflow-y-auto">
+                        <h3 className="font-semibold mb-2 text-destructive">Import Errors ({studentImportErrors.length})</h3>
+                        {studentImportErrors.map((error, index) => (
+                          <div key={index} className="p-3 bg-destructive/10 rounded space-y-1 text-sm">
+                            <div><strong>Roll Number:</strong> {error.roll_number}</div>
+                            <div><strong>Email:</strong> {error.email}</div>
                             <div className="text-destructive"><strong>Error:</strong> {error.error}</div>
                           </div>
                         ))}
