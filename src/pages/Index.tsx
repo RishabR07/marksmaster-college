@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { GraduationCap, BookOpen, Users } from "lucide-react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 const Index = () => {
   const { user, userRole, loading } = useAuth();
@@ -20,8 +22,10 @@ const Index = () => {
   }, [user, userRole, loading, navigate]);
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--gradient-hero)" }}>
-      <div className="container mx-auto px-4 py-16">
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <div className="flex-1" style={{ background: "var(--gradient-hero)" }}>
+        <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
             <GraduationCap className="h-20 w-20 text-primary-foreground" />
@@ -78,6 +82,8 @@ const Index = () => {
           </Card>
         </div>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 };
