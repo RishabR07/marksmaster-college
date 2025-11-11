@@ -23,7 +23,8 @@ interface Student {
   id: string;
   roll_number: string;
   department: string;
-  profiles: { full_name: string };
+  student_user_id: string;
+  profiles: { full_name: string; email?: string };
 }
 
 interface EnrolledStudent extends Student {
@@ -157,6 +158,7 @@ const TeacherDashboard = () => {
         id: enrollment.students.id,
         roll_number: enrollment.students.roll_number,
         department: enrollment.students.department,
+        student_user_id: enrollment.students.student_user_id,
         profiles: {
           full_name: profileMap.get(enrollment.students.student_user_id) || "Unknown"
         }
@@ -208,6 +210,39 @@ const TeacherDashboard = () => {
       toast.success("Marks added successfully!");
       setMarks("");
       setAssessmentType("");
+      
+      // Send marks notification
+      try {
+        const student = enrolledStudents.find(s => s.id === selectedStudent);
+        const subject = subjects.find(s => s.id === selectedSubject);
+        const { data: studentProfile } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("id", student?.student_user_id)
+          .single();
+
+        if (student && subject && studentProfile) {
+          const { data: session } = await supabase.auth.getSession();
+          
+          await supabase.functions.invoke('send-marks-notification', {
+            body: {
+              studentEmail: studentProfile.email,
+              studentName: student.profiles.full_name,
+              subjectName: subject.subject_name,
+              subjectCode: subject.subject_code,
+              marks: parseFloat(marks),
+              maxMarks: parseFloat(maxMarks),
+              assessmentType: assessmentType,
+              assessmentDate: new Date().toISOString().split('T')[0]
+            },
+            headers: {
+              Authorization: `Bearer ${session.session?.access_token}`
+            }
+          });
+        }
+      } catch (emailError: any) {
+        console.error('Failed to send marks notification:', emailError);
+      }
     }
   };
 
@@ -518,6 +553,41 @@ const TeacherDashboard = () => {
                           } else {
                             toast.success("Student enrolled successfully!");
                             fetchEnrolledStudents();
+                            
+                            // Send enrollment notification
+                            try {
+                              const student = students.find(s => s.id === studentId);
+                              const subject = subjects.find(s => s.id === selectedSubject);
+                              const { data: studentProfile } = await supabase
+                                .from("profiles")
+                                .select("email")
+                                .eq("id", student?.student_user_id)
+                                .single();
+                              const { data: teacherProfile } = await supabase
+                                .from("profiles")
+                                .select("full_name")
+                                .eq("id", user?.id)
+                                .single();
+
+                              if (student && subject && studentProfile && teacherProfile) {
+                                const { data: session } = await supabase.auth.getSession();
+                                
+                                await supabase.functions.invoke('send-enrollment-notification', {
+                                  body: {
+                                    studentEmail: studentProfile.email,
+                                    studentName: student.profiles.full_name,
+                                    subjectName: subject.subject_name,
+                                    subjectCode: subject.subject_code,
+                                    teacherName: teacherProfile.full_name
+                                  },
+                                  headers: {
+                                    Authorization: `Bearer ${session.session?.access_token}`
+                                  }
+                                });
+                              }
+                            } catch (emailError: any) {
+                              console.error('Failed to send enrollment notification:', emailError);
+                            }
                           }
                         }}
                         disabled={!selectedSubject}
