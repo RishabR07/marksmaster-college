@@ -1,47 +1,47 @@
 Project Overview
-How can I edit this code?
+Editing the Code
 
-You can edit the application using any of the following methods:
+You can update and maintain this project using any of the methods below.
 
-1. Use the Lovable Editor
+1. Using the Lovable Editor
 
-Visit the project page and make changes directly in the browser. Edits made there will be committed automatically to this repository.
+You can visit the project page in Lovable and make direct edits. Any changes made there will automatically be committed to this repository.
 
-2. Use a Local Development Environment
+2. Using a Local Development Environment
 
-If you prefer working locally in your own IDE, clone the repository and push your changes. These changes will also appear in the Lovable editor.
+If you prefer working locally in your preferred IDE, you can clone the repository and push updates. These changes will also sync to the Lovable editor.
 
-Requirements: Node.js and npm (installation via nvm is recommended).
+Requirements: Node.js and npm (installing via nvm is recommended)
 
-# Step 1: Clone the repository using the project's Git URL.
+# Step 1: Clone the repository with your Git URL.
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
+# Step 2: Enter the project directory.
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
+# Step 3: Install dependencies.
 npm i
 
-# Step 4: Start the development server with auto-reloading.
+# Step 4: Start the development server with auto-reload.
 npm run dev
 
-3. Edit Directly on GitHub
+3. Editing Directly on GitHub
 
-Navigate to the file you want to edit.
+Navigate to the file you want to modify.
 
-Click the Edit button (pencil icon).
+Click the Edit (pencil) icon.
 
-Make changes and commit them.
+Apply your changes and commit them.
 
-4. Use GitHub Codespaces
+4. Using GitHub Codespaces
 
-Open the repository’s main page.
+Open the main page of the repository.
 
-Click Code > Codespaces.
+Click Code → Codespaces.
 
 Create a new Codespace.
 
-Edit files in the Codespace and commit/push changes when finished.
+Edit files directly and commit/push your changes when done.
 
 Technologies Used
 
@@ -59,9 +59,8 @@ Tailwind CSS
 
 Deployment
 
-Deployment can be managed from the project’s settings within Lovable by using the publishing options provided.
+Deployment options are available from the project’s settings within Lovable. You can publish the project directly from the interface.
 
-Custom Domains
+Custom Domain
 
-You can connect a custom domain to the project.
-In the project settings, navigate to Domains and select Connect Domain.
+A custom domain can be connected through the project’s domain settings. Navigate to Project Settings → Domains and use Connect Domain to set it up.
