@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendance: {
+        Row: {
+          attendance_date: string
+          created_at: string
+          id: string
+          marked_by: string
+          remarks: string | null
+          status: Database["public"]["Enums"]["attendance_status"]
+          student_id: string
+          subject_id: string
+          updated_at: string
+        }
+        Insert: {
+          attendance_date?: string
+          created_at?: string
+          id?: string
+          marked_by: string
+          remarks?: string | null
+          status?: Database["public"]["Enums"]["attendance_status"]
+          student_id: string
+          subject_id: string
+          updated_at?: string
+        }
+        Update: {
+          attendance_date?: string
+          created_at?: string
+          id?: string
+          marked_by?: string
+          remarks?: string | null
+          status?: Database["public"]["Enums"]["attendance_status"]
+          student_id?: string
+          subject_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enrollments: {
         Row: {
           enrolled_at: string | null
@@ -208,6 +259,7 @@ export type Database = {
       }
     }
     Enums: {
+      attendance_status: "present" | "absent" | "late" | "excused"
       user_role: "teacher" | "student" | "admin"
     }
     CompositeTypes: {
@@ -336,6 +388,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      attendance_status: ["present", "absent", "late", "excused"],
       user_role: ["teacher", "student", "admin"],
     },
   },
