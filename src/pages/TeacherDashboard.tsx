@@ -10,8 +10,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { LogOut, BookOpen, Users, FileText, Upload, Loader2 } from "lucide-react";
+import { LogOut, BookOpen, Users, FileText, Upload, Loader2, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { TeacherAttendance } from "@/components/attendance/TeacherAttendance";
 
 interface Subject {
   id: string;
@@ -422,7 +423,7 @@ const TeacherDashboard = () => {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="subjects" className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-3">
+          <TabsList className="grid w-full max-w-3xl grid-cols-4">
             <TabsTrigger value="subjects">
               <BookOpen className="h-4 w-4 mr-2" />
               Subjects
@@ -434,6 +435,10 @@ const TeacherDashboard = () => {
             <TabsTrigger value="marks">
               <FileText className="h-4 w-4 mr-2" />
               Add Marks
+            </TabsTrigger>
+            <TabsTrigger value="attendance">
+              <Calendar className="h-4 w-4 mr-2" />
+              Attendance
             </TabsTrigger>
           </TabsList>
 
@@ -933,6 +938,11 @@ const TeacherDashboard = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+          <TabsContent value="attendance">
+            {user && <TeacherAttendance userId={user.id} />}
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

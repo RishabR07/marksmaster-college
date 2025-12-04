@@ -3,9 +3,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, GraduationCap, Award } from "lucide-react";
+import { LogOut, GraduationCap, Award, FileText, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { StudentAttendance } from "@/components/attendance/StudentAttendance";
 
 interface Mark {
   id: string;
@@ -44,7 +46,7 @@ const StudentDashboard = () => {
       .from("students")
       .select("id, roll_number, department, student_user_id")
       .eq("student_user_id", user?.id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       toast.error("Failed to fetch student information");
@@ -68,12 +70,11 @@ const StudentDashboard = () => {
   };
 
   const fetchMarks = async () => {
-    // First get student ID
     const { data: studentData } = await supabase
       .from("students")
       .select("id")
       .eq("student_user_id", user?.id)
-      .single();
+      .maybeSingle();
 
     if (!studentData) return;
 
@@ -99,7 +100,6 @@ const StudentDashboard = () => {
       return;
     }
 
-    // Fetch teacher profiles separately
     if (data) {
       const teacherIds = [...new Set(data.map(m => m.subjects.teacher_id))];
       const { data: teacherProfiles } = await supabase
@@ -177,65 +177,74 @@ const StudentDashboard = () => {
           </Card>
         )}
 
-        <Card className="shadow-[var(--shadow-md)]">
-          <CardHeader>
-            <CardTitle>Assessment Marks</CardTitle>
-            <CardDescription>View your marks across all subjects</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {marks.map((mark) => {
-                const percentage = parseFloat(getPercentage(mark.marks, mark.max_marks));
-                const grade = getGrade(percentage);
-                
-                return (
-                  <Card key={mark.id} className="shadow-[var(--shadow-sm)]">
-                    <CardContent className="pt-6">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="space-y-1">
-                          <h3 className="font-semibold text-lg">
-                            {mark.subjects.subject_name}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {mark.subjects.subject_code} • {mark.assessment_type}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Teacher: {mark.subjects.profiles.full_name}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-6">
-                          <div className="text-center">
-                            <p className="text-2xl font-bold text-primary">
-                              {mark.marks}/{mark.max_marks}
-                            </p>
-                            <p className="text-sm text-muted-foreground">Marks</p>
+        <Tabs defaultValue="marks" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="marks">
+              <FileText className="h-4 w-4 mr-2" />
+              Marks
+            </TabsTrigger>
+            <TabsTrigger value="attendance">
+              <Calendar className="h-4 w-4 mr-2" />
+              Attendance
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="marks">
+            <Card className="shadow-[var(--shadow-md)]">
+              <CardHeader>
+                <CardTitle>Assessment Marks</CardTitle>
+                <CardDescription>View your marks across all subjects</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {marks.map((mark) => {
+                    const percentage = parseFloat(getPercentage(mark.marks, mark.max_marks));
+                    const grade = getGrade(percentage);
+                    
+                    return (
+                      <Card key={mark.id} className="shadow-[var(--shadow-sm)]">
+                        <CardContent className="pt-6">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="space-y-1">
+                              <h3 className="font-semibold text-lg">{mark.subjects.subject_name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {mark.subjects.subject_code} • {mark.assessment_type}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Teacher: {mark.subjects.profiles.full_name}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-6">
+                              <div className="text-center">
+                                <p className="text-2xl font-bold text-primary">{mark.marks}/{mark.max_marks}</p>
+                                <p className="text-sm text-muted-foreground">Marks</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-2xl font-bold text-accent">{percentage}%</p>
+                                <p className="text-sm text-muted-foreground">Percentage</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-2xl font-bold text-success">{grade}</p>
+                                <p className="text-sm text-muted-foreground">Grade</p>
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-center">
-                            <p className="text-2xl font-bold text-accent">
-                              {percentage}%
-                            </p>
-                            <p className="text-sm text-muted-foreground">Percentage</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-2xl font-bold text-success">
-                              {grade}
-                            </p>
-                            <p className="text-sm text-muted-foreground">Grade</p>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-            {marks.length === 0 && (
-              <p className="text-muted-foreground text-center py-8">
-                No marks available yet
-              </p>
-            )}
-          </CardContent>
-        </Card>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+                {marks.length === 0 && (
+                  <p className="text-muted-foreground text-center py-8">No marks available yet</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="attendance">
+            {user && <StudentAttendance studentId={user.id} />}
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
