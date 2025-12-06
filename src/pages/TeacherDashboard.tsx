@@ -759,6 +759,10 @@ const TeacherDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="attendance">
+            {user && <TeacherAttendance userId={user.id} />}
+          </TabsContent>
         </Tabs>
 
         <Dialog open={showBulkImport} onOpenChange={(open) => {
@@ -938,11 +942,6 @@ const TeacherDashboard = () => {
             </div>
           </DialogContent>
         </Dialog>
-
-          <TabsContent value="attendance">
-            {user && <TeacherAttendance userId={user.id} />}
-          </TabsContent>
-        </Tabs>
       </main>
     </div>
   );
