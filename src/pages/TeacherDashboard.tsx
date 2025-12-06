@@ -10,9 +10,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { LogOut, BookOpen, Users, FileText, Upload, Loader2, Calendar } from "lucide-react";
+import { LogOut, BookOpen, Users, FileText, Upload, Loader2, Calendar, CalendarDays, Megaphone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TeacherAttendance } from "@/components/attendance/TeacherAttendance";
+import { EventsList } from "@/components/events/EventsList";
+import { AnnouncementsList } from "@/components/events/AnnouncementsList";
 
 interface Subject {
   id: string;
@@ -423,7 +425,7 @@ const TeacherDashboard = () => {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="subjects" className="space-y-6">
-          <TabsList className="grid w-full max-w-3xl grid-cols-4">
+          <TabsList className="grid w-full max-w-4xl grid-cols-6">
             <TabsTrigger value="subjects">
               <BookOpen className="h-4 w-4 mr-2" />
               Subjects
@@ -439,6 +441,14 @@ const TeacherDashboard = () => {
             <TabsTrigger value="attendance">
               <Calendar className="h-4 w-4 mr-2" />
               Attendance
+            </TabsTrigger>
+            <TabsTrigger value="events">
+              <CalendarDays className="h-4 w-4 mr-2" />
+              Events
+            </TabsTrigger>
+            <TabsTrigger value="announcements">
+              <Megaphone className="h-4 w-4 mr-2" />
+              Announcements
             </TabsTrigger>
           </TabsList>
 
@@ -762,6 +772,30 @@ const TeacherDashboard = () => {
 
           <TabsContent value="attendance">
             {user && <TeacherAttendance userId={user.id} />}
+          </TabsContent>
+
+          <TabsContent value="events">
+            <Card className="shadow-[var(--shadow-md)]">
+              <CardHeader>
+                <CardTitle>Upcoming Events</CardTitle>
+                <CardDescription>Stay updated with college events</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EventsList />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="announcements">
+            <Card className="shadow-[var(--shadow-md)]">
+              <CardHeader>
+                <CardTitle>Announcements</CardTitle>
+                <CardDescription>Important notices and updates</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AnnouncementsList />
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 

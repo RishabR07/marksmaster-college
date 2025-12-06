@@ -10,11 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Upload, Trash2, KeyRound, Trash, Calendar, Users } from "lucide-react";
+import { Loader2, Upload, Trash2, KeyRound, Trash, Calendar, Users, CalendarDays, Megaphone } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminAttendance } from "@/components/attendance/AdminAttendance";
+import { AdminEventsManager } from "@/components/events/AdminEventsManager";
+import { AdminAnnouncementsManager } from "@/components/events/AdminAnnouncementsManager";
+
 interface UserData {
   id: string;
   email: string;
@@ -371,47 +374,68 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <div>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>View and manage all users in the system</CardDescription>
-              </div>
-              {selectedUsers.size > 0 && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={deletingBulk}>
-                      {deletingBulk ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <Trash className="h-4 w-4 mr-2" />
-                      )}
-                      Delete Selected ({selectedUsers.size})
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Multiple Users</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete {selectedUsers.size} selected user(s)? This action cannot be undone and will permanently delete all user accounts and associated data.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleBulkDelete}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Delete All
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
+        <Tabs defaultValue="users" className="space-y-6">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
+            <TabsTrigger value="users">
+              <Users className="h-4 w-4 mr-2" />
+              Users
+            </TabsTrigger>
+            <TabsTrigger value="attendance">
+              <Calendar className="h-4 w-4 mr-2" />
+              Attendance
+            </TabsTrigger>
+            <TabsTrigger value="events">
+              <CalendarDays className="h-4 w-4 mr-2" />
+              Events
+            </TabsTrigger>
+            <TabsTrigger value="announcements">
+              <Megaphone className="h-4 w-4 mr-2" />
+              Announcements
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="users">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>User Management</CardTitle>
+                    <CardDescription>View and manage all users in the system</CardDescription>
+                  </div>
+                  {selectedUsers.size > 0 && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" disabled={deletingBulk}>
+                          {deletingBulk ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <Trash className="h-4 w-4 mr-2" />
+                          )}
+                          Delete Selected ({selectedUsers.size})
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Multiple Users</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete {selectedUsers.size} selected user(s)? This action cannot be undone and will permanently delete all user accounts and associated data.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleBulkDelete}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete All
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -586,7 +610,37 @@ const AdminDashboard = () => {
               </TableBody>
             </Table>
           </CardContent>
-        </Card>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="attendance">
+            <AdminAttendance />
+          </TabsContent>
+
+          <TabsContent value="events">
+            <Card>
+              <CardHeader>
+                <CardTitle>Events Management</CardTitle>
+                <CardDescription>Create and manage college events</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {user && <AdminEventsManager userId={user.id} />}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="announcements">
+            <Card>
+              <CardHeader>
+                <CardTitle>Announcements Management</CardTitle>
+                <CardDescription>Create and manage announcements</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {user && <AdminAnnouncementsManager userId={user.id} />}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         <Dialog open={showBulkImport} onOpenChange={(open) => {
           setShowBulkImport(open);
