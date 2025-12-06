@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, GraduationCap, Award, FileText, Calendar } from "lucide-react";
+import { LogOut, GraduationCap, Award, FileText, Calendar, CalendarDays, Megaphone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StudentAttendance } from "@/components/attendance/StudentAttendance";
-
+import { EventsList } from "@/components/events/EventsList";
+import { AnnouncementsList } from "@/components/events/AnnouncementsList";
 interface Mark {
   id: string;
   marks: number;
@@ -178,7 +179,7 @@ const StudentDashboard = () => {
         )}
 
         <Tabs defaultValue="marks" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="marks">
               <FileText className="h-4 w-4 mr-2" />
               Marks
@@ -186,6 +187,14 @@ const StudentDashboard = () => {
             <TabsTrigger value="attendance">
               <Calendar className="h-4 w-4 mr-2" />
               Attendance
+            </TabsTrigger>
+            <TabsTrigger value="events">
+              <CalendarDays className="h-4 w-4 mr-2" />
+              Events
+            </TabsTrigger>
+            <TabsTrigger value="announcements">
+              <Megaphone className="h-4 w-4 mr-2" />
+              Announcements
             </TabsTrigger>
           </TabsList>
 
@@ -243,6 +252,30 @@ const StudentDashboard = () => {
 
           <TabsContent value="attendance">
             {user && <StudentAttendance studentId={user.id} />}
+          </TabsContent>
+
+          <TabsContent value="events">
+            <Card className="shadow-[var(--shadow-md)]">
+              <CardHeader>
+                <CardTitle>Upcoming Events</CardTitle>
+                <CardDescription>Stay updated with college events</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EventsList />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="announcements">
+            <Card className="shadow-[var(--shadow-md)]">
+              <CardHeader>
+                <CardTitle>Announcements</CardTitle>
+                <CardDescription>Important notices and updates</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AnnouncementsList />
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>
