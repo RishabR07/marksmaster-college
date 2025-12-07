@@ -133,37 +133,46 @@ export type Database = {
       }
       events: {
         Row: {
+          branch: string | null
           created_at: string
           created_by: string
           description: string | null
           event_date: string
           event_time: string | null
           id: string
+          image_url: string | null
           location: string | null
           title: string
           updated_at: string
+          year_of_studying: number | null
         }
         Insert: {
+          branch?: string | null
           created_at?: string
           created_by: string
           description?: string | null
           event_date: string
           event_time?: string | null
           id?: string
+          image_url?: string | null
           location?: string | null
           title: string
           updated_at?: string
+          year_of_studying?: number | null
         }
         Update: {
+          branch?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
           event_date?: string
           event_time?: string | null
           id?: string
+          image_url?: string | null
           location?: string | null
           title?: string
           updated_at?: string
+          year_of_studying?: number | null
         }
         Relationships: []
       }
