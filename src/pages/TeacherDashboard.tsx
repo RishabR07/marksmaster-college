@@ -13,8 +13,8 @@ import { toast } from "sonner";
 import { LogOut, BookOpen, Users, FileText, Upload, Loader2, Calendar, CalendarDays, Megaphone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TeacherAttendance } from "@/components/attendance/TeacherAttendance";
-import { EventsList } from "@/components/events/EventsList";
-import { AnnouncementsList } from "@/components/events/AnnouncementsList";
+import { TeacherEventsManager } from "@/components/events/TeacherEventsManager";
+import { TeacherAnnouncementsManager } from "@/components/events/TeacherAnnouncementsManager";
 
 interface Subject {
   id: string;
@@ -777,11 +777,11 @@ const TeacherDashboard = () => {
           <TabsContent value="events">
             <Card className="shadow-[var(--shadow-md)]">
               <CardHeader>
-                <CardTitle>Upcoming Events</CardTitle>
-                <CardDescription>Stay updated with college events</CardDescription>
+                <CardTitle>Events</CardTitle>
+                <CardDescription>Create and manage college events</CardDescription>
               </CardHeader>
               <CardContent>
-                <EventsList />
+                {user && <TeacherEventsManager userId={user.id} />}
               </CardContent>
             </Card>
           </TabsContent>
@@ -790,10 +790,10 @@ const TeacherDashboard = () => {
             <Card className="shadow-[var(--shadow-md)]">
               <CardHeader>
                 <CardTitle>Announcements</CardTitle>
-                <CardDescription>Important notices and updates</CardDescription>
+                <CardDescription>Create and manage announcements</CardDescription>
               </CardHeader>
               <CardContent>
-                <AnnouncementsList />
+                {user && <TeacherAnnouncementsManager userId={user.id} />}
               </CardContent>
             </Card>
           </TabsContent>
