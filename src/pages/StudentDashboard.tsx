@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { LogOut, GraduationCap, Award, FileText, Calendar, CalendarDays, Megaphone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StudentAttendance } from "@/components/attendance/StudentAttendance";
-import { EventsList } from "@/components/events/EventsList";
+import { StudentEventsManager } from "@/components/events/StudentEventsManager";
 import { AnnouncementsList } from "@/components/events/AnnouncementsList";
 interface Mark {
   id: string;
@@ -257,11 +257,11 @@ const StudentDashboard = () => {
           <TabsContent value="events">
             <Card className="shadow-[var(--shadow-md)]">
               <CardHeader>
-                <CardTitle>Upcoming Events</CardTitle>
-                <CardDescription>Stay updated with college events</CardDescription>
+                <CardTitle>Our Events</CardTitle>
+                <CardDescription>Share and view college events</CardDescription>
               </CardHeader>
               <CardContent>
-                <EventsList />
+                {user && <StudentEventsManager userId={user.id} />}
               </CardContent>
             </Card>
           </TabsContent>
