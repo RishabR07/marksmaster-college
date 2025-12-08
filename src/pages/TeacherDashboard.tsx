@@ -416,10 +416,16 @@ const TeacherDashboard = () => {
             <BookOpen className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold">Teacher Dashboard</h1>
           </div>
-          <Button variant="outline" onClick={signOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => navigate("/teacher/ia-marks")}>
+              <FileText className="h-4 w-4 mr-2" />
+              IA Marks
+            </Button>
+            <Button variant="outline" onClick={signOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
       </header>
 

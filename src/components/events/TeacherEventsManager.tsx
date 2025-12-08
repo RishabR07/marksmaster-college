@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ImageUpload } from "@/components/ImageUpload";
 
 interface Event {
   id: string;
@@ -118,7 +119,7 @@ export function TeacherEventsManager({ userId }: TeacherEventsManagerProps) {
               Add Event
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Event</DialogTitle>
             </DialogHeader>
@@ -169,16 +170,13 @@ export function TeacherEventsManager({ userId }: TeacherEventsManagerProps) {
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 />
               </div>
-              <div>
-                <Label htmlFor="image_url">Image URL</Label>
-                <Input
-                  id="image_url"
-                  type="url"
-                  placeholder="https://example.com/image.jpg"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                />
-              </div>
+              
+              <ImageUpload
+                userId={userId}
+                currentUrl={formData.image_url}
+                onUpload={(url) => setFormData({ ...formData, image_url: url })}
+              />
+
               <Button type="submit" className="w-full">Create Event</Button>
             </form>
           </DialogContent>
