@@ -176,6 +176,69 @@ export type Database = {
         }
         Relationships: []
       }
+      ia_marks: {
+        Row: {
+          activity_submission: number | null
+          course_completion: number | null
+          created_at: string | null
+          ia1: number | null
+          ia2: number | null
+          ia3: number | null
+          ia4: number | null
+          ia5: number | null
+          id: string
+          student_id: string
+          subject_id: string
+          synopsis_submission: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          activity_submission?: number | null
+          course_completion?: number | null
+          created_at?: string | null
+          ia1?: number | null
+          ia2?: number | null
+          ia3?: number | null
+          ia4?: number | null
+          ia5?: number | null
+          id?: string
+          student_id: string
+          subject_id: string
+          synopsis_submission?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          activity_submission?: number | null
+          course_completion?: number | null
+          created_at?: string | null
+          ia1?: number | null
+          ia2?: number | null
+          ia3?: number | null
+          ia4?: number | null
+          ia5?: number | null
+          id?: string
+          student_id?: string
+          subject_id?: string
+          synopsis_submission?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ia_marks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ia_marks_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marks: {
         Row: {
           assessment_date: string | null

@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ImageUpload } from "@/components/ImageUpload";
 
 interface Event {
   id: string;
@@ -42,12 +43,13 @@ interface StudentEventsManagerProps {
 
 const branches = [
   "Computer Science",
-  "Information Science",
   "Electronics",
   "Electrical",
   "Mechanical",
   "Civil",
   "Chemical",
+  "Polymer",
+  "Automobile",
   "Other"
 ];
 
@@ -136,7 +138,7 @@ export function StudentEventsManager({ userId }: StudentEventsManagerProps) {
               Add Event
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Event</DialogTitle>
             </DialogHeader>
@@ -168,16 +170,13 @@ export function StudentEventsManager({ userId }: StudentEventsManagerProps) {
                   required
                 />
               </div>
-              <div>
-                <Label htmlFor="image_url">Image URL</Label>
-                <Input
-                  id="image_url"
-                  type="url"
-                  placeholder="https://example.com/image.jpg"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                />
-              </div>
+              
+              <ImageUpload
+                userId={userId}
+                currentUrl={formData.image_url}
+                onUpload={(url) => setFormData({ ...formData, image_url: url })}
+              />
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="branch">Branch</Label>
@@ -210,7 +209,6 @@ export function StudentEventsManager({ userId }: StudentEventsManagerProps) {
                       <SelectItem value="1">1st Year</SelectItem>
                       <SelectItem value="2">2nd Year</SelectItem>
                       <SelectItem value="3">3rd Year</SelectItem>
-                      <SelectItem value="4">4th Year</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
