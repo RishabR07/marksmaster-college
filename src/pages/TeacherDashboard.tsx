@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { LogOut, BookOpen, Users, FileText, Upload, Loader2, Calendar, CalendarDays, Megaphone } from "lucide-react";
+import { LogOut, BookOpen, Users, FileText, Upload, Loader2, Calendar, CalendarDays, Megaphone, ClipboardList } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TeacherAttendance } from "@/components/attendance/TeacherAttendance";
 import { TeacherEventsManager } from "@/components/events/TeacherEventsManager";
@@ -416,22 +416,16 @@ const TeacherDashboard = () => {
             <BookOpen className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold">Teacher Dashboard</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={() => navigate("/teacher/ia-marks")}>
-              <FileText className="h-4 w-4 mr-2" />
-              IA Marks
-            </Button>
-            <Button variant="outline" onClick={signOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
+          <Button variant="outline" onClick={signOut}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="subjects" className="space-y-6">
-          <TabsList className="grid w-full max-w-4xl grid-cols-6">
+          <TabsList className="grid w-full max-w-5xl grid-cols-7">
             <TabsTrigger value="subjects">
               <BookOpen className="h-4 w-4 mr-2" />
               Subjects
@@ -442,7 +436,11 @@ const TeacherDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="marks">
               <FileText className="h-4 w-4 mr-2" />
-              Add Marks
+              Marks
+            </TabsTrigger>
+            <TabsTrigger value="ia-marks" onClick={() => navigate("/teacher/ia-marks")}>
+              <ClipboardList className="h-4 w-4 mr-2" />
+              IA Marks
             </TabsTrigger>
             <TabsTrigger value="attendance">
               <Calendar className="h-4 w-4 mr-2" />

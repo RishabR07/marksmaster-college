@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, GraduationCap, Award, FileText, Calendar, CalendarDays, Megaphone } from "lucide-react";
+import { LogOut, GraduationCap, Award, FileText, Calendar, CalendarDays, Megaphone, ClipboardList } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StudentAttendance } from "@/components/attendance/StudentAttendance";
 import { StudentEventsManager } from "@/components/events/StudentEventsManager";
 import { AnnouncementsList } from "@/components/events/AnnouncementsList";
+import { StudentIAMarks } from "@/components/attendance/StudentIAMarks";
 interface Mark {
   id: string;
   marks: number;
@@ -179,10 +180,14 @@ const StudentDashboard = () => {
         )}
 
         <Tabs defaultValue="marks" className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
+          <TabsList className="grid w-full max-w-3xl grid-cols-5">
             <TabsTrigger value="marks">
               <FileText className="h-4 w-4 mr-2" />
               Marks
+            </TabsTrigger>
+            <TabsTrigger value="ia-marks">
+              <ClipboardList className="h-4 w-4 mr-2" />
+              IA Marks
             </TabsTrigger>
             <TabsTrigger value="attendance">
               <Calendar className="h-4 w-4 mr-2" />
@@ -246,6 +251,18 @@ const StudentDashboard = () => {
                 {marks.length === 0 && (
                   <p className="text-muted-foreground text-center py-8">No marks available yet</p>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="ia-marks">
+            <Card className="shadow-[var(--shadow-md)]">
+              <CardHeader>
+                <CardTitle>IA Marks (Final Year)</CardTitle>
+                <CardDescription>View your Internal Assessment marks - Total: 240 marks</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {user && <StudentIAMarks studentUserId={user.id} />}
               </CardContent>
             </Card>
           </TabsContent>
