@@ -7,17 +7,21 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, ArrowLeft } from "lucide-react";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+
+type ForgotPasswordStep = "email" | "otp" | "newPassword";
 
 const Auth = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [forgotLoading, setForgotLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
 
+  // Login state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
+  // Signup state
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupFullName, setSignupFullName] = useState("");
@@ -25,27 +29,93 @@ const Auth = () => {
   const [rollNumber, setRollNumber] = useState("");
   const [department, setDepartment] = useState("");
 
-  const handleForgotPassword = async () => {
-    if (!loginEmail) {
-      toast.error("Please enter your email address first");
+  // Forgot password state
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotStep, setForgotStep] = useState<ForgotPasswordStep>("email");
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [otpValue, setOtpValue] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+
+  const handleSendOTP = async () => {
+    if (!forgotEmail) {
+      toast.error("Please enter your email address");
       return;
     }
 
     setForgotLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
-        redirectTo: `${window.location.origin}/auth?reset=true`,
+      const response = await supabase.functions.invoke("send-otp", {
+        body: { email: forgotEmail },
       });
 
-      if (error) throw error;
+      if (response.error) throw response.error;
 
-      toast.success("Password reset email sent! Check your inbox.");
+      toast.success("OTP sent to your email!");
+      setForgotStep("otp");
     } catch (error: any) {
-      toast.error(error.message || "Failed to send reset email");
+      toast.error(error.message || "Failed to send OTP");
     } finally {
       setForgotLoading(false);
     }
+  };
+
+  const handleVerifyAndResetPassword = async () => {
+    if (otpValue.length !== 6) {
+      toast.error("Please enter the complete 6-digit OTP");
+      return;
+    }
+
+    if (!newPassword || !confirmPassword) {
+      toast.error("Please enter your new password");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    setForgotLoading(true);
+
+    try {
+      const response = await supabase.functions.invoke("verify-otp", {
+        body: { 
+          email: forgotEmail, 
+          otp: otpValue,
+          newPassword: newPassword 
+        },
+      });
+
+      if (response.error) throw response.error;
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      toast.success("Password reset successfully! Please login with your new password.");
+      resetForgotPasswordState();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to reset password");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const resetForgotPasswordState = () => {
+    setShowForgotPassword(false);
+    setForgotStep("email");
+    setForgotEmail("");
+    setOtpValue("");
+    setNewPassword("");
+    setConfirmPassword("");
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -142,6 +212,118 @@ const Auth = () => {
     }
   };
 
+  // Forgot Password UI
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--gradient-hero)" }}>
+        <Card className="w-full max-w-md shadow-[var(--shadow-xl)]">
+          <CardHeader className="space-y-1 text-center">
+            <div className="flex justify-center mb-2">
+              <GraduationCap className="h-12 w-12 text-primary" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
+            <CardDescription>
+              {forgotStep === "email" && "Enter your email to receive an OTP"}
+              {forgotStep === "otp" && "Enter the 6-digit OTP sent to your email"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={resetForgotPasswordState}
+              className="mb-2"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Login
+            </Button>
+
+            {forgotStep === "email" && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="forgot-email">Email</Label>
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    placeholder="name@college.edu"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                  />
+                </div>
+                <Button 
+                  onClick={handleSendOTP} 
+                  className="w-full" 
+                  disabled={forgotLoading}
+                >
+                  {forgotLoading ? "Sending OTP..." : "Send OTP"}
+                </Button>
+              </div>
+            )}
+
+            {forgotStep === "otp" && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Enter OTP</Label>
+                  <div className="flex justify-center">
+                    <InputOTP
+                      maxLength={6}
+                      value={otpValue}
+                      onChange={(value) => setOtpValue(value)}
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">New Password</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    placeholder="Enter new password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+                <Button 
+                  onClick={handleVerifyAndResetPassword} 
+                  className="w-full" 
+                  disabled={forgotLoading}
+                >
+                  {forgotLoading ? "Resetting..." : "Reset Password"}
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={handleSendOTP} 
+                  className="w-full"
+                  disabled={forgotLoading}
+                >
+                  Resend OTP
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--gradient-hero)" }}>
       <Card className="w-full max-w-md shadow-[var(--shadow-xl)]">
@@ -177,11 +359,13 @@ const Auth = () => {
                     <Label htmlFor="login-password">Password</Label>
                     <button
                       type="button"
-                      onClick={handleForgotPassword}
+                      onClick={() => {
+                        setForgotEmail(loginEmail);
+                        setShowForgotPassword(true);
+                      }}
                       className="text-sm text-primary hover:underline"
-                      disabled={forgotLoading}
                     >
-                      {forgotLoading ? "Sending..." : "Forgot Password?"}
+                      Forgot Password?
                     </button>
                   </div>
                   <Input
