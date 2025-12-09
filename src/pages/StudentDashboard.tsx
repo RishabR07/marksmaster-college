@@ -11,6 +11,7 @@ import { StudentAttendance } from "@/components/attendance/StudentAttendance";
 import { StudentEventsManager } from "@/components/events/StudentEventsManager";
 import { AnnouncementsList } from "@/components/events/AnnouncementsList";
 import { StudentIAMarks } from "@/components/attendance/StudentIAMarks";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 interface Mark {
   id: string;
   marks: number;
@@ -146,10 +147,13 @@ const StudentDashboard = () => {
             <GraduationCap className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold">Student Dashboard</h1>
           </div>
-          <Button variant="outline" onClick={signOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+          <div className="flex gap-2">
+            <ChangePasswordDialog />
+            <Button variant="outline" onClick={signOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
       </header>
 
