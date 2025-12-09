@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { TeacherAttendance } from "@/components/attendance/TeacherAttendance";
 import { TeacherEventsManager } from "@/components/events/TeacherEventsManager";
 import { TeacherAnnouncementsManager } from "@/components/events/TeacherAnnouncementsManager";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 
 interface Subject {
   id: string;
@@ -416,10 +417,13 @@ const TeacherDashboard = () => {
             <BookOpen className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold">Teacher Dashboard</h1>
           </div>
-          <Button variant="outline" onClick={signOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+          <div className="flex gap-2">
+            <ChangePasswordDialog />
+            <Button variant="outline" onClick={signOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
       </header>
 

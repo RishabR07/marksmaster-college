@@ -12,6 +12,7 @@ import { GraduationCap } from "lucide-react";
 const Auth = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
 
   const [loginEmail, setLoginEmail] = useState("");
@@ -23,6 +24,29 @@ const Auth = () => {
   const [signupRole, setSignupRole] = useState<"teacher" | "student">("student");
   const [rollNumber, setRollNumber] = useState("");
   const [department, setDepartment] = useState("");
+
+  const handleForgotPassword = async () => {
+    if (!loginEmail) {
+      toast.error("Please enter your email address first");
+      return;
+    }
+
+    setForgotLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+
+      if (error) throw error;
+
+      toast.success("Password reset email sent! Check your inbox.");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send reset email");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,7 +173,17 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="login-password">Password</Label>
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="text-sm text-primary hover:underline"
+                      disabled={forgotLoading}
+                    >
+                      {forgotLoading ? "Sending..." : "Forgot Password?"}
+                    </button>
+                  </div>
                   <Input
                     id="login-password"
                     type="password"

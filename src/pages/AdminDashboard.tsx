@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminAttendance } from "@/components/attendance/AdminAttendance";
 import { AdminEventsManager } from "@/components/events/AdminEventsManager";
 import { AdminAnnouncementsManager } from "@/components/events/AdminAnnouncementsManager";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 
 interface UserData {
   id: string;
@@ -368,6 +369,7 @@ const AdminDashboard = () => {
               <Upload className="mr-2 h-4 w-4" />
               Bulk Import
             </Button>
+            <ChangePasswordDialog />
             <Button onClick={signOut} variant="outline">
               Sign Out
             </Button>
