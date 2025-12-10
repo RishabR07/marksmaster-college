@@ -10,12 +10,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { LogOut, BookOpen, Users, FileText, Upload, Loader2, Calendar, CalendarDays, Megaphone, ClipboardList } from "lucide-react";
+import { LogOut, BookOpen, Users, FileText, Upload, Loader2, Calendar, CalendarDays, Megaphone, ClipboardList, Menu, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TeacherAttendance } from "@/components/attendance/TeacherAttendance";
 import { TeacherEventsManager } from "@/components/events/TeacherEventsManager";
 import { TeacherAnnouncementsManager } from "@/components/events/TeacherAnnouncementsManager";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface Subject {
   id: string;
@@ -53,6 +54,7 @@ const TeacherDashboard = () => {
   const [studentImportErrors, setStudentImportErrors] = useState<{ email: string; roll_number: string; error: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const studentFileInputRef = useRef<HTMLInputElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Form states
   const [subjectName, setSubjectName] = useState("");
@@ -412,51 +414,86 @@ const TeacherDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card shadow-[var(--shadow-sm)]">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold">Teacher Dashboard</h1>
+        <div className="container mx-auto px-4 py-3 md:py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+              <h1 className="text-lg md:text-2xl font-bold">Teacher Dashboard</h1>
+            </div>
+            
+            {/* Desktop Actions */}
+            <div className="hidden md:flex gap-2">
+              <ThemeToggle />
+              <ChangePasswordDialog />
+              <Button variant="outline" onClick={signOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+
+            {/* Mobile Actions */}
+            <div className="flex md:hidden items-center gap-2">
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <ChangePasswordDialog />
-            <Button variant="outline" onClick={signOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-3 pb-3 flex flex-col gap-2 border-t border-border pt-3">
+              <ChangePasswordDialog />
+              <Button variant="outline" onClick={signOut} className="w-full">
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+          )}
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="subjects" className="space-y-6">
-          <TabsList className="grid w-full max-w-5xl grid-cols-7">
-            <TabsTrigger value="subjects">
-              <BookOpen className="h-4 w-4 mr-2" />
-              Subjects
+      <main className="container mx-auto px-4 py-4 md:py-8">
+        <Tabs defaultValue="subjects" className="space-y-4 md:space-y-6">
+          <TabsList className="w-full flex flex-wrap gap-1 h-auto p-1">
+            <TabsTrigger value="subjects" className="flex-1 min-w-[70px] text-xs md:text-sm">
+              <BookOpen className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Subjects</span>
+              <span className="sm:hidden">Subj</span>
             </TabsTrigger>
-            <TabsTrigger value="enrollments">
-              <Users className="h-4 w-4 mr-2" />
-              Enrollments
+            <TabsTrigger value="enrollments" className="flex-1 min-w-[70px] text-xs md:text-sm">
+              <Users className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Enrollments</span>
+              <span className="sm:hidden">Enroll</span>
             </TabsTrigger>
-            <TabsTrigger value="marks">
-              <FileText className="h-4 w-4 mr-2" />
-              Marks
+            <TabsTrigger value="marks" className="flex-1 min-w-[70px] text-xs md:text-sm">
+              <FileText className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Marks</span>
+              <span className="sm:hidden">Marks</span>
             </TabsTrigger>
-            <TabsTrigger value="ia-marks" onClick={() => navigate("/teacher/ia-marks")}>
-              <ClipboardList className="h-4 w-4 mr-2" />
-              IA Marks
+            <TabsTrigger value="ia-marks" onClick={() => navigate("/teacher/ia-marks")} className="flex-1 min-w-[70px] text-xs md:text-sm">
+              <ClipboardList className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+              <span className="hidden sm:inline">IA Marks</span>
+              <span className="sm:hidden">IA</span>
             </TabsTrigger>
-            <TabsTrigger value="attendance">
-              <Calendar className="h-4 w-4 mr-2" />
-              Attendance
+            <TabsTrigger value="attendance" className="flex-1 min-w-[70px] text-xs md:text-sm">
+              <Calendar className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Attendance</span>
+              <span className="sm:hidden">Attend</span>
             </TabsTrigger>
-            <TabsTrigger value="events">
-              <CalendarDays className="h-4 w-4 mr-2" />
-              Events
+            <TabsTrigger value="events" className="flex-1 min-w-[70px] text-xs md:text-sm">
+              <CalendarDays className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Events</span>
+              <span className="sm:hidden">Events</span>
             </TabsTrigger>
-            <TabsTrigger value="announcements">
-              <Megaphone className="h-4 w-4 mr-2" />
-              Announcements
+            <TabsTrigger value="announcements" className="flex-1 min-w-[70px] text-xs md:text-sm">
+              <Megaphone className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Announcements</span>
+              <span className="sm:hidden">News</span>
             </TabsTrigger>
           </TabsList>
 
