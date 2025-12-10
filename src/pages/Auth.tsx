@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { GraduationCap, ArrowLeft } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 type ForgotPasswordStep = "email" | "otp" | "newPassword";
+
+const OTP_EXPIRY_SECONDS = 600; // 10 minutes
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -37,6 +40,31 @@ const Auth = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
+  
+  // OTP Timer state
+  const [otpTimeRemaining, setOtpTimeRemaining] = useState(OTP_EXPIRY_SECONDS);
+  const [otpTimerActive, setOtpTimerActive] = useState(false);
+
+  // OTP Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (otpTimerActive && otpTimeRemaining > 0) {
+      interval = setInterval(() => {
+        setOtpTimeRemaining((prev) => prev - 1);
+      }, 1000);
+    } else if (otpTimeRemaining === 0) {
+      setOtpTimerActive(false);
+    }
+
+    return () => clearInterval(interval);
+  }, [otpTimerActive, otpTimeRemaining]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleSendOTP = async () => {
     if (!forgotEmail) {
@@ -55,6 +83,8 @@ const Auth = () => {
 
       toast.success("OTP sent to your email!");
       setForgotStep("otp");
+      setOtpTimeRemaining(OTP_EXPIRY_SECONDS);
+      setOtpTimerActive(true);
     } catch (error: any) {
       toast.error(error.message || "Failed to send OTP");
     } finally {
@@ -62,9 +92,19 @@ const Auth = () => {
     }
   };
 
+  const handleResendOTP = async () => {
+    setOtpValue("");
+    await handleSendOTP();
+  };
+
   const handleVerifyAndResetPassword = async () => {
     if (otpValue.length !== 6) {
       toast.error("Please enter the complete 6-digit OTP");
+      return;
+    }
+
+    if (otpTimeRemaining === 0) {
+      toast.error("OTP has expired. Please request a new one.");
       return;
     }
 
@@ -116,6 +156,8 @@ const Auth = () => {
     setOtpValue("");
     setNewPassword("");
     setConfirmPassword("");
+    setOtpTimerActive(false);
+    setOtpTimeRemaining(OTP_EXPIRY_SECONDS);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -216,13 +258,16 @@ const Auth = () => {
   if (showForgotPassword) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--gradient-hero)" }}>
+        <div className="absolute top-4 right-4">
+          <ThemeToggle />
+        </div>
         <Card className="w-full max-w-md shadow-[var(--shadow-xl)]">
           <CardHeader className="space-y-1 text-center">
             <div className="flex justify-center mb-2">
-              <GraduationCap className="h-12 w-12 text-primary" />
+              <GraduationCap className="h-10 w-10 md:h-12 md:w-12 text-primary" />
             </div>
-            <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-xl md:text-2xl font-bold">Reset Password</CardTitle>
+            <CardDescription className="text-sm">
               {forgotStep === "email" && "Enter your email to receive an OTP"}
               {forgotStep === "otp" && "Enter the 6-digit OTP sent to your email"}
             </CardDescription>
@@ -280,6 +325,18 @@ const Auth = () => {
                       </InputOTPGroup>
                     </InputOTP>
                   </div>
+                  {/* OTP Timer */}
+                  <div className="text-center mt-3">
+                    {otpTimeRemaining > 0 ? (
+                      <p className={`text-sm font-medium ${otpTimeRemaining <= 60 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        OTP expires in: <span className="font-bold">{formatTime(otpTimeRemaining)}</span>
+                      </p>
+                    ) : (
+                      <p className="text-sm text-destructive font-medium">
+                        OTP has expired. Please request a new one.
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="new-password">New Password</Label>
@@ -304,13 +361,13 @@ const Auth = () => {
                 <Button 
                   onClick={handleVerifyAndResetPassword} 
                   className="w-full" 
-                  disabled={forgotLoading}
+                  disabled={forgotLoading || otpTimeRemaining === 0}
                 >
                   {forgotLoading ? "Resetting..." : "Reset Password"}
                 </Button>
                 <Button 
                   variant="ghost" 
-                  onClick={handleSendOTP} 
+                  onClick={handleResendOTP} 
                   className="w-full"
                   disabled={forgotLoading}
                 >
@@ -326,13 +383,16 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--gradient-hero)" }}>
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <Card className="w-full max-w-md shadow-[var(--shadow-xl)]">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-2">
-            <GraduationCap className="h-12 w-12 text-primary" />
+            <GraduationCap className="h-10 w-10 md:h-12 md:w-12 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-bold">College Assessment System</CardTitle>
-          <CardDescription>Manage and view internal assessment marks</CardDescription>
+          <CardTitle className="text-xl md:text-2xl font-bold">College Assessment System</CardTitle>
+          <CardDescription className="text-sm">Manage and view internal assessment marks</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={isLogin ? "login" : "signup"} onValueChange={(v) => setIsLogin(v === "login")}>

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Upload, Trash2, KeyRound, Trash, Calendar, Users, CalendarDays, Megaphone } from "lucide-react";
+import { Loader2, Upload, Trash2, KeyRound, Trash, Calendar, Users, CalendarDays, Megaphone, Menu, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +18,7 @@ import { AdminAttendance } from "@/components/attendance/AdminAttendance";
 import { AdminEventsManager } from "@/components/events/AdminEventsManager";
 import { AdminAnnouncementsManager } from "@/components/events/AdminAnnouncementsManager";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface UserData {
   id: string;
@@ -43,6 +44,7 @@ const AdminDashboard = () => {
   const [resetPasswordResult, setResetPasswordResult] = useState<{ email: string; password: string } | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [deletingBulk, setDeletingBulk] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -357,42 +359,79 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-4xl font-bold text-foreground">Admin Panel</h1>
-            <p className="text-muted-foreground">Manage users, roles, and profiles</p>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={() => setShowBulkImport(true)} variant="secondary">
-              <Upload className="mr-2 h-4 w-4" />
-              Bulk Import
-            </Button>
-            <ChangePasswordDialog />
-            <Button onClick={signOut} variant="outline">
-              Sign Out
-            </Button>
-          </div>
-        </div>
+    <div className="min-h-screen bg-background">
+      <header className="border-b bg-card shadow-[var(--shadow-sm)]">
+        <div className="container mx-auto px-4 py-3 md:py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-xl md:text-4xl font-bold text-foreground">Admin Panel</h1>
+              <p className="text-xs md:text-base text-muted-foreground">Manage users, roles, and profiles</p>
+            </div>
+            
+            {/* Desktop Actions */}
+            <div className="hidden md:flex gap-2">
+              <Button onClick={() => setShowBulkImport(true)} variant="secondary">
+                <Upload className="mr-2 h-4 w-4" />
+                Bulk Import
+              </Button>
+              <ThemeToggle />
+              <ChangePasswordDialog />
+              <Button onClick={signOut} variant="outline">
+                Sign Out
+              </Button>
+            </div>
 
-        <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
-            <TabsTrigger value="users">
-              <Users className="h-4 w-4 mr-2" />
-              Users
+            {/* Mobile Actions */}
+            <div className="flex md:hidden items-center gap-2">
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            </div>
+          </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-3 pb-3 flex flex-col gap-2 border-t border-border pt-3">
+              <Button onClick={() => { setShowBulkImport(true); setMobileMenuOpen(false); }} variant="secondary" className="w-full">
+                <Upload className="mr-2 h-4 w-4" />
+                Bulk Import
+              </Button>
+              <ChangePasswordDialog />
+              <Button onClick={signOut} variant="outline" className="w-full">
+                Sign Out
+              </Button>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-4 md:py-8 space-y-4 md:space-y-6">
+        <Tabs defaultValue="users" className="space-y-4 md:space-y-6">
+          <TabsList className="w-full flex flex-wrap gap-1 h-auto p-1 max-w-2xl">
+            <TabsTrigger value="users" className="flex-1 min-w-[70px] text-xs md:text-sm">
+              <Users className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Users</span>
+              <span className="sm:hidden">Users</span>
             </TabsTrigger>
-            <TabsTrigger value="attendance">
-              <Calendar className="h-4 w-4 mr-2" />
-              Attendance
+            <TabsTrigger value="attendance" className="flex-1 min-w-[70px] text-xs md:text-sm">
+              <Calendar className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Attendance</span>
+              <span className="sm:hidden">Attend</span>
             </TabsTrigger>
-            <TabsTrigger value="events">
-              <CalendarDays className="h-4 w-4 mr-2" />
-              Events
+            <TabsTrigger value="events" className="flex-1 min-w-[70px] text-xs md:text-sm">
+              <CalendarDays className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Events</span>
+              <span className="sm:hidden">Events</span>
             </TabsTrigger>
-            <TabsTrigger value="announcements">
-              <Megaphone className="h-4 w-4 mr-2" />
-              Announcements
+            <TabsTrigger value="announcements" className="flex-1 min-w-[70px] text-xs md:text-sm">
+              <Megaphone className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Announcements</span>
+              <span className="sm:hidden">News</span>
             </TabsTrigger>
           </TabsList>
 
@@ -808,7 +847,7 @@ const AdminDashboard = () => {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
+      </main>
     </div>
   );
 };
