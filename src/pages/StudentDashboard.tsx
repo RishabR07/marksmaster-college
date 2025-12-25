@@ -190,14 +190,14 @@ const StudentDashboard = () => {
 
       <main className="container mx-auto px-4 py-4 md:py-8 space-y-4 md:space-y-6">
         {studentInfo && (
-          <Card className="shadow-[var(--shadow-md)]" style={{ background: "var(--gradient-card)" }}>
+          <Card className="shadow-[var(--shadow-md)] bg-white dark:bg-slate-900 border border-white dark:border-white/10">
             <CardHeader className="pb-3 md:pb-6">
               <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
                 <Award className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                 Student Information
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 p-4">
               <div>
                 <p className="text-xs md:text-sm text-muted-foreground">Name</p>
                 <p className="font-semibold text-sm md:text-base">{studentInfo.profiles.full_name}</p>
@@ -244,20 +244,20 @@ const StudentDashboard = () => {
           </TabsList>
 
           <TabsContent value="marks">
-            <Card className="shadow-[var(--shadow-md)]">
+            <Card className="shadow-[var(--shadow-md)] bg-white dark:bg-slate-900 border border-white dark:border-white/10">
               <CardHeader className="pb-3 md:pb-6">
                 <CardTitle className="text-lg md:text-xl">Assessment Marks</CardTitle>
                 <CardDescription className="text-sm">View your marks across all subjects</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 <div className="space-y-3 md:space-y-4">
                   {marks.map((mark) => {
                     const percentage = parseFloat(getPercentage(mark.marks, mark.max_marks));
                     const grade = getGrade(percentage);
                     
                     return (
-                      <Card key={mark.id} className="shadow-[var(--shadow-sm)]">
-                        <CardContent className="pt-4 md:pt-6">
+                      <Card key={mark.id} className="shadow-[var(--shadow-sm)] bg-white dark:bg-slate-800 border border-white dark:border-white/10">
+                        <CardContent className="pt-4 md:pt-6 p-4">
                           <div className="flex flex-col gap-3 md:gap-4">
                             <div className="space-y-1">
                               <h3 className="font-semibold text-base md:text-lg">{mark.subjects.subject_name}</h3>
@@ -296,12 +296,12 @@ const StudentDashboard = () => {
           </TabsContent>
 
           <TabsContent value="ia-marks">
-            <Card className="shadow-[var(--shadow-md)]">
+            <Card className="shadow-[var(--shadow-md)] bg-white dark:bg-slate-900 border border-white dark:border-white/10">
               <CardHeader className="pb-3 md:pb-6">
                 <CardTitle className="text-lg md:text-xl">IA Marks (Final Year)</CardTitle>
                 <CardDescription className="text-sm">View your Internal Assessment marks - Total: 240 marks</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 {user && <StudentIAMarks studentUserId={user.id} />}
               </CardContent>
             </Card>
@@ -312,24 +312,24 @@ const StudentDashboard = () => {
           </TabsContent>
 
           <TabsContent value="events">
-            <Card className="shadow-[var(--shadow-md)]">
+            <Card className="shadow-[var(--shadow-md)] bg-white dark:bg-slate-900 border border-white dark:border-white/10">
               <CardHeader className="pb-3 md:pb-6">
                 <CardTitle className="text-lg md:text-xl">Our Events</CardTitle>
                 <CardDescription className="text-sm">Share and view college events</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 {user && <StudentEventsManager userId={user.id} />}
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="announcements">
-            <Card className="shadow-[var(--shadow-md)]">
+            <Card className="shadow-[var(--shadow-md)] bg-white dark:bg-slate-900 border border-white dark:border-white/10">
               <CardHeader className="pb-3 md:pb-6">
                 <CardTitle className="text-lg md:text-xl">Announcements</CardTitle>
                 <CardDescription className="text-sm">Important notices and updates</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 <AnnouncementsList />
               </CardContent>
             </Card>

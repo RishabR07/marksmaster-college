@@ -223,7 +223,7 @@ const IAMarks = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Card className="mb-6">
+        <Card className="mb-6 border border-white dark:border-white/10">
           <CardHeader>
             <CardTitle>Internal Assessment Marks</CardTitle>
             <CardDescription>

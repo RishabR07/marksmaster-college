@@ -2,8 +2,19 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { GraduationCap, BookOpen, Users } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  GraduationCap,
+  BookOpen,
+  Users,
+  ShieldCheck,
+} from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -13,76 +24,107 @@ const Index = () => {
 
   useEffect(() => {
     if (!loading && user && userRole) {
-      if (userRole === "teacher") {
-        navigate("/teacher");
-      } else if (userRole === "student") {
-        navigate("/student");
-      }
+      if (userRole === "teacher") navigate("/teacher");
+      else if (userRole === "student") navigate("/student");
+      else if (userRole === "admin") navigate("/admin");
     }
   }, [user, userRole, loading, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
+
       <div className="flex-1" style={{ background: "var(--gradient-hero)" }}>
-        <div className="container mx-auto px-4 py-8 md:py-16">
-          <div className="text-center mb-8 md:mb-12">
-            <div className="flex justify-center mb-4 md:mb-6">
-              <GraduationCap className="h-14 w-14 md:h-20 md:w-20 text-primary-foreground" />
+        <div className="container mx-auto px-4 py-10 md:py-16">
+          {/* HERO */}
+          <div className="text-center mb-12">
+            <div className="flex justify-center mb-6">
+              <GraduationCap className="h-16 w-16 md:h-20 md:w-20 text-primary-foreground" />
             </div>
-            <h1 className="text-3xl md:text-5xl font-bold text-primary-foreground mb-3 md:mb-4">
-              College Assessment System
+            <h1 className="text-3xl md:text-5xl font-bold text-primary-foreground mb-4">
+              KPT Student Portal
             </h1>
-            <p className="text-base md:text-xl text-primary-foreground/90 max-w-2xl mx-auto px-4">
-              A modern platform for managing internal assessment marks efficiently
+            <p className="text-base md:text-xl text-primary-foreground/90 max-w-3xl mx-auto">
+              A complete academic management platform for course enrollment,
+              attendance tracking, assessments, and role-based access for
+              students, faculty, and administrators.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto">
-            <Card className="shadow-[var(--shadow-xl)] hover:shadow-2xl transition-shadow">
-              <CardHeader className="text-center pb-4">
-                <div className="flex justify-center mb-3 md:mb-4">
-                  <BookOpen className="h-10 w-10 md:h-12 md:w-12 text-primary" />
-                </div>
-                <CardTitle className="text-xl md:text-2xl">For Teachers</CardTitle>
-                <CardDescription className="text-sm">Manage subjects and student assessments</CardDescription>
+          {/* ROLE CARDS */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {/* TEACHER */}
+            <Card className="shadow-[var(--shadow-xl)] hover:shadow-2xl transition-shadow border border-white dark:border-white/10">
+              <CardHeader className="text-center">
+                <BookOpen className="h-12 w-12 mx-auto mb-4 text-primary" />
+                <CardTitle className="text-2xl">Faculty</CardTitle>
+                <CardDescription>
+                  Manage subjects, attendance, and assessments
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>✓ Create and manage subjects</li>
-                  <li>✓ Add student records</li>
-                  <li>✓ Enter and update marks</li>
-                  <li>✓ Track student performance</li>
+                  <li>✓ Create & manage subjects</li>
+                  <li>✓ Enroll students</li>
+                  <li>✓ Mark daily attendance</li>
+                  <li>✓ Enter IA & assessment marks</li>
+                  <li>✓ Publish announcements & events</li>
                 </ul>
                 <Button className="w-full" onClick={() => navigate("/auth")}>
-                  Get Started as Teacher
+                  Login as Faculty
                 </Button>
               </CardContent>
             </Card>
 
-            <Card className="shadow-[var(--shadow-xl)] hover:shadow-2xl transition-shadow">
-              <CardHeader className="text-center pb-4">
-                <div className="flex justify-center mb-3 md:mb-4">
-                  <Users className="h-10 w-10 md:h-12 md:w-12 text-primary" />
-                </div>
-                <CardTitle className="text-xl md:text-2xl">For Students</CardTitle>
-                <CardDescription className="text-sm">View your assessment marks and grades</CardDescription>
+            {/* STUDENT */}
+            <Card className="shadow-[var(--shadow-xl)] hover:shadow-2xl transition-shadow border border-white dark:border-white/10">
+              <CardHeader className="text-center">
+                <Users className="h-12 w-12 mx-auto mb-4 text-primary" />
+                <CardTitle className="text-2xl">Students</CardTitle>
+                <CardDescription>
+                  Track academics in one place
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>✓ View all your marks</li>
-                  <li>✓ Track assessment history</li>
-                  <li>✓ See grades and percentages</li>
-                  <li>✓ Monitor your progress</li>
+                  <li>✓ View enrolled subjects</li>
+                  <li>✓ Check IA & assessment marks</li>
+                  <li>✓ Monitor attendance percentage</li>
+                  <li>✓ View grades & performance</li>
+                  <li>✓ Receive announcements</li>
                 </ul>
                 <Button className="w-full" onClick={() => navigate("/auth")}>
-                  Get Started as Student
+                  Login as Student
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* ADMIN */}
+            <Card className="shadow-[var(--shadow-xl)] hover:shadow-2xl transition-shadow border border-white dark:border-white/10">
+              <CardHeader className="text-center">
+                <ShieldCheck className="h-12 w-12 mx-auto mb-4 text-primary" />
+                <CardTitle className="text-2xl">Administration</CardTitle>
+                <CardDescription>
+                  Full system control & management
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>✓ Manage users & roles</li>
+                  <li>✓ Bulk import students</li>
+                  <li>✓ Reset passwords securely</li>
+                  <li>✓ Monitor attendance & records</li>
+                  <li>✓ System-wide announcements</li>
+                </ul>
+                <Button className="w-full" onClick={() => navigate("/auth")}>
+                  Login as Admin
                 </Button>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+
       <Footer />
     </div>
   );

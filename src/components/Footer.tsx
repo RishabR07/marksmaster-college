@@ -9,8 +9,13 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           <div>
             <div className="flex items-center gap-2 mb-3 md:mb-4">
-              <GraduationCap className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-              <span className="font-bold text-foreground text-sm md:text-base">College Assessment</span>
+              {/* <GraduationCap className="h-5 w-5 md:h-6 md:w-6 text-primary" /> */}
+                <img
+    src="/kpt.jpeg"
+    alt="KPT Logo"
+    className="h-12 w-12 md:h-15 md:w-15 object-contain  shadow-lg"
+  />
+              <span className="font-bold text-foreground text-sm md:text-base">KPT Management</span>
             </div>
             <p className="text-xs md:text-sm text-muted-foreground">
               A modern platform for managing internal assessment marks efficiently.

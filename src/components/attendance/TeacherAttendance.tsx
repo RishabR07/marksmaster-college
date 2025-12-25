@@ -305,7 +305,7 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
 
   return (
     <div className="space-y-6">
-      <Card className="shadow-[var(--shadow-md)]">
+      <Card className="shadow-[var(--shadow-md)] border border-white dark:border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
@@ -355,7 +355,7 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
       </Card>
 
       {selectedSubject && (
-        <Card className="shadow-[var(--shadow-md)]">
+        <Card className="shadow-[var(--shadow-md)] border border-white dark:border-white/10">
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
@@ -438,7 +438,7 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
         </Card>
       )}
 
-      <Card className="shadow-[var(--shadow-md)]">
+      <Card className="shadow-[var(--shadow-md)] border border-white dark:border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Download className="h-5 w-5" />

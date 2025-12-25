@@ -262,7 +262,7 @@ export const AdminAttendance = () => {
     <div className="space-y-6">
       {/* Stats Overview */}
       <div className="grid md:grid-cols-4 gap-4">
-        <Card className="shadow-[var(--shadow-sm)]">
+        <Card className="shadow-[var(--shadow-sm)] border border-white dark:border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Users className="h-4 w-4" />
@@ -275,7 +275,7 @@ export const AdminAttendance = () => {
           </CardContent>
         </Card>
         
-        <Card className="shadow-[var(--shadow-sm)]">
+        <Card className="shadow-[var(--shadow-sm)] border border-white dark:border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
@@ -290,7 +290,7 @@ export const AdminAttendance = () => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-[var(--shadow-sm)]">
+        <Card className="shadow-[var(--shadow-sm)] border border-white dark:border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
@@ -317,7 +317,7 @@ export const AdminAttendance = () => {
       </div>
 
       {/* Filters and Report */}
-      <Card className="shadow-[var(--shadow-md)]">
+      <Card className="shadow-[var(--shadow-md)] border border-white dark:border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
@@ -361,7 +361,7 @@ export const AdminAttendance = () => {
       </Card>
 
       {/* Subject Summary */}
-      <Card className="shadow-[var(--shadow-md)]">
+      <Card className="shadow-[var(--shadow-md)] border border-white dark:border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
@@ -402,7 +402,7 @@ export const AdminAttendance = () => {
       </Card>
 
       {/* Student Attendance Table */}
-      <Card className="shadow-[var(--shadow-md)]">
+      <Card className="shadow-[var(--shadow-md)] border border-white dark:border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />

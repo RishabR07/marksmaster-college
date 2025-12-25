@@ -2,8 +2,41 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const rawUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const rawKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
+
+const clean = (v?: string) => {
+  if (!v) return undefined;
+  // Remove surrounding quotes and whitespace, and strip newlines
+  return v.replace(/^\s*"|"\s*$/g, '').trim().replace(/\r?\n/g, '');
+};
+
+const SUPABASE_URL = clean(rawUrl);
+const SUPABASE_PUBLISHABLE_KEY = clean(rawKey);
+
+// Validate values early to avoid cryptic `fetch` errors in the browser
+if (!SUPABASE_URL) {
+  // eslint-disable-next-line no-console
+  console.error('VITE_SUPABASE_URL is missing or empty.');
+  throw new Error('Missing VITE_SUPABASE_URL environment variable');
+}
+
+try {
+  // Validate URL format
+  // This will throw for invalid URLs
+  // eslint-disable-next-line no-new
+  new URL(SUPABASE_URL);
+} catch (err) {
+  // eslint-disable-next-line no-console
+  console.error('VITE_SUPABASE_URL is invalid:', SUPABASE_URL);
+  throw new Error('Invalid VITE_SUPABASE_URL environment variable');
+}
+
+if (!SUPABASE_PUBLISHABLE_KEY) {
+  // eslint-disable-next-line no-console
+  console.error('VITE_SUPABASE_PUBLISHABLE_KEY is missing or empty.');
+  throw new Error('Missing VITE_SUPABASE_PUBLISHABLE_KEY environment variable');
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";

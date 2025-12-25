@@ -208,7 +208,7 @@ export const StudentAttendance = ({ studentId }: StudentAttendanceProps) => {
     <div className="space-y-6">
       {/* Stats Overview */}
       <div className="grid md:grid-cols-4 gap-4">
-        <Card className="shadow-[var(--shadow-sm)]">
+        <Card className="shadow-[var(--shadow-sm)] border border-white dark:border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Attendance Rate</CardTitle>
           </CardHeader>
@@ -223,7 +223,7 @@ export const StudentAttendance = ({ studentId }: StudentAttendanceProps) => {
           </CardContent>
         </Card>
         
-        <Card className="shadow-[var(--shadow-sm)]">
+        <Card className="shadow-[var(--shadow-sm)] border border-white dark:border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Check className="h-4 w-4 text-green-500" />
@@ -236,7 +236,7 @@ export const StudentAttendance = ({ studentId }: StudentAttendanceProps) => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-[var(--shadow-sm)]">
+        <Card className="shadow-[var(--shadow-sm)] border border-white dark:border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <X className="h-4 w-4 text-red-500" />
@@ -249,7 +249,7 @@ export const StudentAttendance = ({ studentId }: StudentAttendanceProps) => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-[var(--shadow-sm)]">
+        <Card className="shadow-[var(--shadow-sm)] border border-white dark:border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Clock className="h-4 w-4 text-yellow-500" />
@@ -264,7 +264,7 @@ export const StudentAttendance = ({ studentId }: StudentAttendanceProps) => {
       </div>
 
       {/* Attendance Records */}
-      <Card className="shadow-[var(--shadow-md)]">
+      <Card className="shadow-[var(--shadow-md)] border border-white dark:border-white/10">
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -337,7 +337,7 @@ export const StudentAttendance = ({ studentId }: StudentAttendanceProps) => {
 
       {/* Subject-wise Summary */}
       {subjects.length > 0 && (
-        <Card className="shadow-[var(--shadow-md)]">
+        <Card className="shadow-[var(--shadow-md)] border border-white dark:border-white/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />

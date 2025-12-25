@@ -498,7 +498,7 @@ const TeacherDashboard = () => {
           </TabsList>
 
           <TabsContent value="subjects" className="space-y-6">
-            <Card className="shadow-[var(--shadow-md)]">
+            <Card className="shadow-[var(--shadow-md)] border border-white dark:border-white/10">
               <CardHeader>
                 <CardTitle>Add New Subject</CardTitle>
                 <CardDescription>Create a new subject to manage assessments</CardDescription>
@@ -532,7 +532,7 @@ const TeacherDashboard = () => {
               </CardContent>
             </Card>
 
-            <Card className="shadow-[var(--shadow-md)]">
+            <Card className="shadow-[var(--shadow-md)] border border-white dark:border-white/10">
               <CardHeader>
                 <CardTitle>My Subjects</CardTitle>
                 <CardDescription>Subjects you're currently teaching</CardDescription>
@@ -540,7 +540,7 @@ const TeacherDashboard = () => {
               <CardContent>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {subjects.map((subject) => (
-                    <Card key={subject.id} className="shadow-[var(--shadow-sm)]">
+                    <Card key={subject.id} className="shadow-[var(--shadow-sm)] border border-white dark:border-white/10">
                       <CardHeader>
                         <CardTitle className="text-lg">{subject.subject_name}</CardTitle>
                         <CardDescription>{subject.subject_code}</CardDescription>
@@ -556,7 +556,7 @@ const TeacherDashboard = () => {
           </TabsContent>
 
           <TabsContent value="enrollments" className="space-y-6">
-            <Card className="shadow-[var(--shadow-md)]">
+            <Card className="shadow-[var(--shadow-md)] border border-white dark:border-white/10">
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
@@ -720,7 +720,7 @@ const TeacherDashboard = () => {
           </TabsContent>
 
           <TabsContent value="marks" className="space-y-6">
-            <Card className="shadow-[var(--shadow-md)]">
+            <Card className="shadow-[var(--shadow-md)] border border-white dark:border-white/10">
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
@@ -820,7 +820,7 @@ const TeacherDashboard = () => {
           </TabsContent>
 
           <TabsContent value="events">
-            <Card className="shadow-[var(--shadow-md)]">
+            <Card className="shadow-[var(--shadow-md)] border border-white dark:border-white/10">
               <CardHeader>
                 <CardTitle>Events</CardTitle>
                 <CardDescription>Create and manage college events</CardDescription>
@@ -832,7 +832,7 @@ const TeacherDashboard = () => {
           </TabsContent>
 
           <TabsContent value="announcements">
-            <Card className="shadow-[var(--shadow-md)]">
+            <Card className="shadow-[var(--shadow-md)] border border-white dark:border-white/10">
               <CardHeader>
                 <CardTitle>Announcements</CardTitle>
                 <CardDescription>Create and manage announcements</CardDescription>

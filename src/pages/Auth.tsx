@@ -261,7 +261,7 @@ const Auth = () => {
         <div className="absolute top-4 right-4">
           <ThemeToggle />
         </div>
-        <Card className="w-full max-w-md shadow-[var(--shadow-xl)]">
+        <Card className="w-full max-w-md shadow-[var(--shadow-xl)] border border-white dark:border-white/10">
           <CardHeader className="space-y-1 text-center">
             <div className="flex justify-center mb-2">
               <GraduationCap className="h-10 w-10 md:h-12 md:w-12 text-primary" />
@@ -386,13 +386,13 @@ const Auth = () => {
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      <Card className="w-full max-w-md shadow-[var(--shadow-xl)]">
+      <Card className="w-full max-w-md shadow-[var(--shadow-xl)] border border-white dark:border-white/10">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-2">
             <GraduationCap className="h-10 w-10 md:h-12 md:w-12 text-primary" />
           </div>
-          <CardTitle className="text-xl md:text-2xl font-bold">College Assessment System</CardTitle>
-          <CardDescription className="text-sm">Manage and view internal assessment marks</CardDescription>
+          <CardTitle className="text-xl md:text-2xl font-bold">KPT Student Portal</CardTitle>
+          <CardDescription className="text-sm">Manage and view data</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={isLogin ? "login" : "signup"} onValueChange={(v) => setIsLogin(v === "login")}>
@@ -408,7 +408,7 @@ const Auth = () => {
                   <Input
                     id="login-email"
                     type="email"
-                    placeholder="name@college.edu"
+                    placeholder="rishab@gmail.com"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     required
@@ -449,7 +449,7 @@ const Auth = () => {
                   <Input
                     id="signup-name"
                     type="text"
-                    placeholder="John Doe"
+                    placeholder="Rishab"
                     value={signupFullName}
                     onChange={(e) => setSignupFullName(e.target.value)}
                     required
@@ -460,7 +460,7 @@ const Auth = () => {
                   <Input
                     id="signup-email"
                     type="email"
-                    placeholder="name@college.edu"
+                    placeholder="rishab@gmail.com"
                     value={signupEmail}
                     onChange={(e) => setSignupEmail(e.target.value)}
                     required
@@ -511,7 +511,7 @@ const Auth = () => {
                       <Input
                         id="roll-number"
                         type="text"
-                        placeholder="CS2021001"
+                        placeholder="103CS23040"
                         value={rollNumber}
                         onChange={(e) => setRollNumber(e.target.value)}
                         required

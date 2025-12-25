@@ -13,8 +13,13 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-            <GraduationCap className="h-7 w-7 md:h-8 md:w-8 text-primary" />
-            <span className="text-lg md:text-xl font-bold text-foreground">College Assessment</span>
+            <img
+    src="/kpt.jpeg"
+    alt="KPT Logo"
+    className="h-12 w-12 md:h-15 md:w-15 object-contain  shadow-lg"
+  />
+   {/* <GraduationCap className="h-7 w-7 md:h-8 md:w-8 text-primary" /> */}
+            <span className="text-lg md:text-xl font-bold text-foreground">KPT Management</span>
           </div>
           
           {/* Desktop Navigation */}
