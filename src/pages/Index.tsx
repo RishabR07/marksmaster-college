@@ -13,7 +13,6 @@ import {
   GraduationCap,
   BookOpen,
   Users,
-  ShieldCheck,
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -26,7 +25,7 @@ const Index = () => {
     if (!loading && user && userRole) {
       if (userRole === "teacher") navigate("/teacher");
       else if (userRole === "student") navigate("/student");
-      else if (userRole === "admin") navigate("/admin");
+      else if (userRole === "admin") navigate("/admin"); // backend/admin-only access
     }
   }, [user, userRole, loading, navigate]);
 
@@ -36,6 +35,7 @@ const Index = () => {
 
       <div className="flex-1" style={{ background: "var(--gradient-hero)" }}>
         <div className="container mx-auto px-4 py-10 md:py-16">
+          
           {/* HERO */}
           <div className="text-center mb-12">
             <div className="flex justify-center mb-6">
@@ -47,13 +47,14 @@ const Index = () => {
             <p className="text-base md:text-xl text-primary-foreground/90 max-w-3xl mx-auto">
               A complete academic management platform for course enrollment,
               attendance tracking, assessments, and role-based access for
-              students, faculty, and administrators.
+              students and faculty.
             </p>
           </div>
 
           {/* ROLE CARDS */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {/* TEACHER */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+
+            {/* FACULTY */}
             <Card className="shadow-[var(--shadow-xl)] hover:shadow-2xl transition-shadow border border-white dark:border-white/10">
               <CardHeader className="text-center">
                 <BookOpen className="h-12 w-12 mx-auto mb-4 text-primary" />
@@ -99,28 +100,6 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            {/* ADMIN */}
-            <Card className="shadow-[var(--shadow-xl)] hover:shadow-2xl transition-shadow border border-white dark:border-white/10">
-              <CardHeader className="text-center">
-                <ShieldCheck className="h-12 w-12 mx-auto mb-4 text-primary" />
-                <CardTitle className="text-2xl">Administration</CardTitle>
-                <CardDescription>
-                  Full system control & management
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>✓ Manage users & roles</li>
-                  <li>✓ Bulk import students</li>
-                  <li>✓ Reset passwords securely</li>
-                  <li>✓ Monitor attendance & records</li>
-                  <li>✓ System-wide announcements</li>
-                </ul>
-                <Button className="w-full" onClick={() => navigate("/auth")}>
-                  Login as Admin
-                </Button>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>

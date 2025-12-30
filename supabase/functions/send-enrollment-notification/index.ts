@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
               <p style="color: #666;"><strong>Teacher:</strong> ${teacherName}</p>
             </div>
             <p>You can now view this subject and your marks in your student dashboard.</p>
-            <p style="margin-top: 30px;">Best regards,<br>College Assessment Team</p>
+            <p style="margin-top: 30px;">Best regards,<br>KPT Management Team</p>
           </div>
         `,
       }),

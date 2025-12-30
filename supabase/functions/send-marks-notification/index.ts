@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
         'Authorization': `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: 'College Assessment <onboarding@resend.dev>',
+        from: 'KPT Management <onboarding@resend.dev>',
         to: [studentEmail],
         subject: `New Marks Added - ${subjectName}`,
         html: `
@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
               </div>
             </div>
             <p>You can view all your marks in your student dashboard.</p>
-            <p style="margin-top: 30px;">Best regards,<br>College Assessment Team</p>
+            <p style="margin-top: 30px;">Best regards,<br>KPT Management Team</p>
           </div>
         `,
       }),

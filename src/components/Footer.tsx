@@ -11,7 +11,7 @@ const Footer = () => {
             <div className="flex items-center gap-2 mb-3 md:mb-4">
               {/* <GraduationCap className="h-5 w-5 md:h-6 md:w-6 text-primary" /> */}
                 <img
-    src="/kpt.jpeg"
+    src="/kpt1.png"
     alt="KPT Logo"
     className="h-12 w-12 md:h-15 md:w-15 object-contain  shadow-lg"
   />
@@ -50,7 +50,7 @@ const Footer = () => {
               rel="noopener noreferrer"
               className="text-blue-600 hover:underline"
             >
-              Rishab
+              Mesnaldo
             </a>
             . All Rights Reserved.
           </p>

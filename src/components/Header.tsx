@@ -14,7 +14,7 @@ const Header = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
             <img
-    src="/kpt.jpeg"
+    src="/kpt1.png"
     alt="KPT Logo"
     className="h-12 w-12 md:h-15 md:w-15 object-contain  shadow-lg"
   />

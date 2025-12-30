@@ -82,6 +82,14 @@ serve(async (req) => {
     // Send email with OTP using Resend API directly
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     
+    if (!RESEND_API_KEY) {
+      console.error("RESEND_API_KEY not configured");
+      return new Response(
+        JSON.stringify({ error: "Email service not configured" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+    
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -89,35 +97,47 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "College Assessment System <onboarding@resend.dev>",
+        from: "noreply@marksmaster.com",
         to: [email],
-        subject: "Password Reset OTP",
+        subject: "Password Reset OTP - KPT Management System",
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">Password Reset Request</h2>
-            <p>You have requested to reset your password. Use the following OTP code:</p>
-            <div style="background-color: #f4f4f4; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
-              <h1 style="color: #2563eb; font-size: 36px; letter-spacing: 8px; margin: 0;">${otpCode}</h1>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px 8px 0 0; color: white; text-align: center;">
+              <h2 style="margin: 0; font-size: 24px;">Password Reset OTP</h2>
             </div>
-            <p style="color: #666;">This code will expire in 10 minutes.</p>
-            <p style="color: #666;">If you did not request this, please ignore this email.</p>
-            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-            <p style="color: #999; font-size: 12px;">College Assessment System</p>
+            <div style="background-color: #f9f9f9; padding: 30px; border: 1px solid #e0e0e0; border-radius: 0 0 8px 8px;">
+              <p style="color: #333; margin-bottom: 20px;">You have requested to reset your password. Use the following OTP code to proceed:</p>
+              <div style="background-color: #ffffff; padding: 25px; text-align: center; margin: 25px 0; border-radius: 8px; border: 2px solid #667eea;">
+                <h1 style="color: #667eea; font-size: 42px; letter-spacing: 8px; margin: 0; font-weight: bold;">${otpCode}</h1>
+              </div>
+              <p style="color: #666; text-align: center; font-size: 14px; margin: 20px 0;">This OTP is valid for <strong>10 minutes</strong></p>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">
+              <p style="color: #999; font-size: 12px; margin: 0;">
+                <strong>Note:</strong> If you did not request this, please ignore this email or contact support immediately.
+              </p>
+              <p style="color: #999; font-size: 12px; margin-top: 15px;">
+                KPT Management Team &copy; ${new Date().getFullYear()}
+              </p>
+            </div>
           </div>
         `,
       }),
     });
 
+    const responseBody = await emailResponse.json();
+
     if (!emailResponse.ok) {
-      const errorData = await emailResponse.json();
-      console.error("Error sending email:", errorData);
+      console.error("Resend API Error:", responseBody);
       return new Response(
-        JSON.stringify({ error: "Failed to send OTP email" }),
+        JSON.stringify({ 
+          error: "Failed to send OTP email",
+          details: responseBody.message || "Unknown error"
+        }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log("OTP email sent successfully");
+    console.log("OTP email sent successfully to:", email, "Message ID:", responseBody.id);
 
     return new Response(
       JSON.stringify({ message: "OTP sent successfully" }),

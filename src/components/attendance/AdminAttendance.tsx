@@ -12,6 +12,12 @@ import { toast } from "sonner";
 import { Calendar, Download, Users, BookOpen, TrendingUp, Loader2 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend } from "date-fns";
 
+// Dynamic import for jsPDF
+const getJsPDF = async () => {
+  const { jsPDF } = await import("jspdf");
+  return jsPDF;
+};
+
 interface Subject {
   id: string;
   subject_name: string;
@@ -198,6 +204,8 @@ export const AdminAttendance = () => {
     setGeneratingReport(true);
 
     try {
+      const PDFClass = await getJsPDF();
+      const doc = new PDFClass();
       const [year, month] = reportMonth.split("-").map(Number);
       const startDate = startOfMonth(new Date(year, month - 1));
       const endDate = endOfMonth(new Date(year, month - 1));
@@ -205,40 +213,230 @@ export const AdminAttendance = () => {
       const workingDays = eachDayOfInterval({ start: startDate, end: endDate })
         .filter(date => !isWeekend(date));
 
-      // Generate comprehensive CSV
-      const csvContent = [
-        `Comprehensive Attendance Report`,
-        `Month: ${format(startDate, "MMMM yyyy")}`,
-        `Generated: ${format(new Date(), "MMMM d, yyyy HH:mm")}`,
-        `Total Working Days: ${workingDays.length}`,
-        "",
-        "=== STUDENT ATTENDANCE SUMMARY ===",
-        "Roll Number,Name,Department,Present,Absent,Late,Excused,Total,Percentage,Status",
-        ...studentSummaries.map(s => 
-          `${s.rollNumber},${s.studentName},${s.department},${s.present},${s.absent},${s.late},${s.excused},${s.total},${s.percentage.toFixed(1)}%,${s.percentage >= lowAttendanceThreshold ? "Good" : "Low Attendance"}`
-        ),
-        "",
-        "=== SUBJECT SUMMARY ===",
-        "Subject Code,Subject Name,Teacher,Total Students,Average Attendance",
-        ...subjectSummaries.map(s =>
-          `${s.subjectCode},${s.subjectName},${s.teacherName},${s.totalStudents},${s.averageAttendance.toFixed(1)}%`
-        ),
-        "",
-        "=== LOW ATTENDANCE ALERTS ===",
-        `Students with attendance below ${lowAttendanceThreshold}%:`,
-        ...studentSummaries.filter(s => s.percentage < lowAttendanceThreshold).map(s =>
-          `${s.rollNumber} - ${s.studentName}: ${s.percentage.toFixed(1)}%`
-        )
-      ].join("\n");
+      // Set up PDF
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 10;
+      const contentWidth = pageWidth - margin * 2;
+      let yPosition = margin;
 
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `attendance_report_${reportMonth}.csv`;
-      link.click();
-      URL.revokeObjectURL(url);
+      // Title
+      doc.setFontSize(13);
+      doc.setFont(undefined, "bold");
+      doc.setTextColor(0, 0, 0);
+      doc.text("Comprehensive Attendance Report", margin, yPosition);
+      yPosition += 5;
 
+      // Report info
+      doc.setFontSize(8);
+      doc.setFont(undefined, "normal");
+      doc.text(`Month: ${format(startDate, "MMMM yyyy")} | Generated: ${format(new Date(), "MMM d, yyyy")} | Working Days: ${workingDays.length}`, margin, yPosition);
+      yPosition += 6;
+
+      // Student Summary Section Title
+      doc.setFontSize(10);
+      doc.setFont(undefined, "bold");
+      doc.text("Student Attendance Summary", margin, yPosition);
+      yPosition += 4;
+
+      // Student table headers - adjusted for proper fit
+      const studentHeaders = ["Roll", "Name", "Dept", "Present", "Absent", "Total", "%"];
+      const headerColPercents = [11, 26, 9, 11, 11, 21, 16];
+      const headerColWidths = headerColPercents.map(p => (p / 100) * contentWidth);
+      const tableRowHeight = 4.5;
+      const headerRowHeight = 5;
+
+      // Draw student header row
+      doc.setFillColor(200, 200, 200);
+      doc.setTextColor(0, 0, 0);
+      let xPos = margin;
+      studentHeaders.forEach((header, i) => {
+        doc.rect(xPos, yPosition, headerColWidths[i], headerRowHeight);
+        doc.setFontSize(6.5);
+        doc.setFont(undefined, "bold");
+        doc.text(header, xPos + headerColWidths[i] / 2, yPosition + 2.8, { align: "center" });
+        xPos += headerColWidths[i];
+      });
+      yPosition += headerRowHeight;
+
+      // Draw student data rows
+      doc.setFont(undefined, "normal");
+      doc.setTextColor(0, 0, 0);
+      const sortedStudents = [...studentSummaries].sort((a, b) => a.rollNumber.localeCompare(b.rollNumber));
+      
+      sortedStudents.forEach(student => {
+        // Page break check
+        if (yPosition > pageHeight - margin - 35) {
+          doc.addPage();
+          yPosition = margin + 3;
+          
+          // Redraw header
+          doc.setFillColor(200, 200, 200);
+          xPos = margin;
+          studentHeaders.forEach((header, i) => {
+            doc.rect(xPos, yPosition, headerColWidths[i], headerRowHeight);
+            doc.setFontSize(6.5);
+            doc.setFont(undefined, "bold");
+            doc.text(header, xPos + headerColWidths[i] / 2, yPosition + 2.8, { align: "center" });
+            xPos += headerColWidths[i];
+          });
+          yPosition += headerRowHeight;
+          doc.setFont(undefined, "normal");
+        }
+
+        const isLowAttendance = student.percentage < lowAttendanceThreshold;
+        if (isLowAttendance) {
+          doc.setFillColor(255, 230, 230);
+        } else {
+          doc.setFillColor(255, 255, 255);
+        }
+
+        const rowData = [
+          student.rollNumber,
+          student.studentName.substring(0, 13),
+          student.department.substring(0, 3),
+          student.present.toString(),
+          student.absent.toString(),
+          student.total.toString(),
+          student.percentage.toFixed(1)
+        ];
+
+        xPos = margin;
+        doc.setTextColor(0, 0, 0);
+        rowData.forEach((cell, i) => {
+          // Draw border
+          doc.setDrawColor(0);
+          doc.setLineWidth(0.2);
+          doc.rect(xPos, yPosition, headerColWidths[i], tableRowHeight);
+          
+          // Draw text
+          doc.setFontSize(6);
+          const cellCenterX = xPos + headerColWidths[i] / 2;
+          const cellCenterY = yPosition + tableRowHeight / 2 + 0.8;
+          
+          // Left align for roll, name, dept; center for others
+          const align = i <= 2 ? "left" : "center";
+          const textX = align === "left" ? xPos + 1 : cellCenterX;
+          
+          doc.text(cell, textX, cellCenterY, { align, maxWidth: headerColWidths[i] - 2 });
+          xPos += headerColWidths[i];
+        });
+        yPosition += tableRowHeight;
+      });
+
+      // Subject Summary
+      yPosition += 5;
+      if (yPosition > pageHeight - margin - 35) {
+        doc.addPage();
+        yPosition = margin;
+      }
+
+      doc.setFontSize(10);
+      doc.setFont(undefined, "bold");
+      doc.setTextColor(0, 0, 0);
+      doc.text("Subject-wise Summary", margin, yPosition);
+      yPosition += 4;
+
+      // Subject table headers
+      const subjectHeaders = ["Code", "Subject", "Teacher", "Students", "Avg %"];
+      const subjectColPercents = [12, 28, 28, 16, 16];
+      const subjectColWidths = subjectColPercents.map(p => (p / 100) * contentWidth);
+
+      // Draw subject header row
+      doc.setFillColor(200, 200, 200);
+      xPos = margin;
+      subjectHeaders.forEach((header, i) => {
+        doc.rect(xPos, yPosition, subjectColWidths[i], headerRowHeight);
+        doc.setFontSize(6.5);
+        doc.setFont(undefined, "bold");
+        doc.text(header, xPos + subjectColWidths[i] / 2, yPosition + 2.8, { align: "center" });
+        xPos += subjectColWidths[i];
+      });
+      yPosition += headerRowHeight;
+
+      // Draw subject data rows
+      doc.setFont(undefined, "normal");
+      doc.setTextColor(0, 0, 0);
+      subjectSummaries.forEach(subject => {
+        if (yPosition > pageHeight - margin - 25) {
+          doc.addPage();
+          yPosition = margin + 3;
+          
+          // Redraw header
+          doc.setFillColor(200, 200, 200);
+          xPos = margin;
+          subjectHeaders.forEach((header, i) => {
+            doc.rect(xPos, yPosition, subjectColWidths[i], headerRowHeight);
+            doc.setFontSize(6.5);
+            doc.setFont(undefined, "bold");
+            doc.text(header, xPos + subjectColWidths[i] / 2, yPosition + 2.8, { align: "center" });
+            xPos += subjectColWidths[i];
+          });
+          yPosition += headerRowHeight;
+          doc.setFont(undefined, "normal");
+        }
+
+        doc.setFillColor(255, 255, 255);
+        doc.setTextColor(0, 0, 0);
+        const subjectData = [
+          subject.subjectCode,
+          subject.subjectName.substring(0, 18),
+          subject.teacherName.substring(0, 18),
+          subject.totalStudents.toString(),
+          subject.averageAttendance.toFixed(1)
+        ];
+
+        xPos = margin;
+        subjectData.forEach((cell, i) => {
+          // Draw border
+          doc.setDrawColor(0);
+          doc.setLineWidth(0.2);
+          doc.rect(xPos, yPosition, subjectColWidths[i], tableRowHeight);
+          
+          // Draw text
+          doc.setFontSize(6);
+          const cellCenterX = xPos + subjectColWidths[i] / 2;
+          const cellCenterY = yPosition + tableRowHeight / 2 + 0.8;
+          
+          const align = i >= 3 ? "center" : "left";
+          const textX = align === "left" ? xPos + 1 : cellCenterX;
+          
+          doc.text(cell, textX, cellCenterY, { align, maxWidth: subjectColWidths[i] - 2 });
+          xPos += subjectColWidths[i];
+        });
+        yPosition += tableRowHeight;
+      });
+
+      // Low Attendance Alerts
+      yPosition += 5;
+      if (yPosition > pageHeight - margin - 20) {
+        doc.addPage();
+        yPosition = margin;
+      }
+
+      const lowAttendanceStudents = studentSummaries.filter(s => s.percentage < lowAttendanceThreshold);
+      if (lowAttendanceStudents.length > 0) {
+        doc.setFontSize(10);
+        doc.setFont(undefined, "bold");
+        doc.setTextColor(200, 0, 0);
+        doc.text(`⚠ Low Attendance Alerts (Below ${lowAttendanceThreshold}%)`, margin, yPosition);
+        yPosition += 4;
+
+        doc.setFont(undefined, "normal");
+        doc.setFontSize(7.5);
+        doc.setTextColor(0, 0, 0);
+        lowAttendanceStudents.slice(0, 20).forEach(student => {
+          if (yPosition > pageHeight - margin - 5) {
+            doc.addPage();
+            yPosition = margin;
+          }
+          doc.text(`• ${student.rollNumber} - ${student.studentName}: ${student.percentage.toFixed(1)}%`, margin + 2, yPosition);
+          yPosition += 3.5;
+        });
+      }
+
+      // Save PDF
+      doc.save(`attendance_report_${reportMonth}.pdf`);
       toast.success("Report downloaded successfully");
     } catch (error: any) {
       toast.error("Failed to generate report: " + error.message);

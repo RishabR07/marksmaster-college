@@ -1,22 +1,40 @@
+// ❌ REMOVED these lines (they caused the error)
+// import jsPDF from "jspdf";
+// import autoTable from "jspdf-autotable";
+
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { LogOut, BookOpen, Users, FileText, Upload, Loader2, Calendar, CalendarDays, Megaphone, ClipboardList, Menu, X } from "lucide-react";
+import {
+  LogOut, BookOpen, Users, FileText, Upload, Loader2,
+  Calendar, CalendarDays, Megaphone, ClipboardList, Menu, X,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TeacherAttendance } from "@/components/attendance/TeacherAttendance";
 import { TeacherEventsManager } from "@/components/events/TeacherEventsManager";
 import { TeacherAnnouncementsManager } from "@/components/events/TeacherAnnouncementsManager";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
+
+/* 🔹 REST OF YOUR FILE IS 100% SAME */
+
 
 interface Subject {
   id: string;
