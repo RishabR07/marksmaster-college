@@ -241,7 +241,7 @@ export const AdminAttendance = () => {
 
       // Student table headers - adjusted for proper fit
       const studentHeaders = ["Roll", "Name", "Dept", "Present", "Absent", "Total", "%"];
-      const headerColPercents = [11, 26, 9, 11, 11, 21, 16];
+      const headerColPercents = [11, 22, 9, 11, 11, 21, 16];
       const headerColWidths = headerColPercents.map(p => (p / 100) * contentWidth);
       const tableRowHeight = 4.5;
       const headerRowHeight = 5;
