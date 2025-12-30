@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
         'Authorization': `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: 'College Assessment <onboarding@resend.dev>',
+        from: 'KPT Management <onboarding@resend.dev>',
         to: [studentEmail],
         subject: `You've been enrolled in ${subjectName}`,
         html: `

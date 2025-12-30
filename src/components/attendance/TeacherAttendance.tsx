@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Calendar, Check, X, Download, Loader2 } from "lucide-react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 
 interface Subject {
   id: string;
@@ -71,6 +71,164 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
 
     if (error) toast.error("Failed to fetch subjects");
     else setSubjects(data || []);
+  };
+
+  const generatePastFourMonthsReport = async () => {
+    if (!selectedSubject) {
+      toast.error("Please select a subject first");
+      return;
+    }
+
+    if (!reportMonth || !/^\d{4}-\d{2}$/.test(reportMonth)) {
+      toast.error("Please select a valid month for the report");
+      return;
+    }
+
+    setGeneratingReport(true);
+
+    try {
+      const [baseYear, baseMonth] = reportMonth.split("-").map(Number);
+      if (Number.isNaN(baseYear) || Number.isNaN(baseMonth) || baseMonth < 1 || baseMonth > 12) {
+        throw new Error("Invalid report month");
+      }
+      const baseDate = new Date(baseYear, baseMonth - 1);
+
+      // overall range: start of month 3 months before baseDate up to end of baseDate month
+      const rangeStart = startOfMonth(subMonths(baseDate, 3));
+      const rangeEnd = endOfMonth(baseDate);
+
+      const subject = subjects.find(s => s.id === selectedSubject);
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF();
+
+      const margin = 10;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const contentWidth = pageWidth - margin * 2;
+      const tableRowHeight = 4.5;
+      const headerRowHeight = 6;
+
+      // fetch attendance for the whole 4-month range once
+      const { data: attendanceData, error } = await supabase
+        .from("attendance")
+        .select("*")
+        .eq("subject_id", selectedSubject)
+        .gte("attendance_date", format(rangeStart, "yyyy-MM-dd"))
+        .lte("attendance_date", format(rangeEnd, "yyyy-MM-dd"));
+
+      if (error) throw error;
+
+      // aggregate per student across the 4 months
+      const aggregatedStats = enrolledStudents.map(student => {
+        const records = attendanceData?.filter(a => a.student_id === student.id) || [];
+        const present = records.filter(r => r.status === "present" || r.status === "late").length;
+        const absent = records.filter(r => r.status === "absent").length;
+        const total = present + absent;
+        const percentage = total > 0 ? ((present / total) * 100).toFixed(1) : "0.0";
+        return {
+          rollNumber: student.roll_number,
+          name: student.profiles.full_name,
+          department: student.department,
+          present,
+          absent,
+          total,
+          percentage
+        };
+      });
+
+      // PDF layout
+      const columns = ["Roll", "Name", "Dept", "Present", "Absent", "Total", "Percentage(%)"];
+      const colPercents = [11, 32, 9, 11, 11, 14, 12];
+      const colWidths = colPercents.map(p => (p / 100) * contentWidth);
+
+      // Title and info
+      let yPosition = margin;
+      doc.setFontSize(13);
+      doc.setFont(undefined, "bold");
+      doc.text(
+        `Attendance (Aggregated) - ${subject?.subject_name} (${subject?.subject_code})`,
+        margin,
+        yPosition
+      );
+      yPosition += 6;
+      doc.setFontSize(9);
+      doc.setFont(undefined, "normal");
+      doc.text(
+        `Period: ${format(rangeStart, "MMM yyyy")} — ${format(rangeEnd, "MMM yyyy")}`,
+        margin,
+        yPosition
+      );
+      yPosition += 6;
+
+      // draw header
+      doc.setFillColor(200, 200, 200);
+      doc.setTextColor(0, 0, 0);
+      let xPos = margin;
+      columns.forEach((col, i) => {
+        doc.rect(xPos, yPosition, colWidths[i], headerRowHeight);
+        doc.setFontSize(7);
+        doc.setFont(undefined, "bold");
+        doc.text(col, xPos + colWidths[i] / 2, yPosition + 3.6, { align: "center" });
+        xPos += colWidths[i];
+      });
+      yPosition += headerRowHeight;
+
+      // draw rows
+      const sorted = [...aggregatedStats].sort((a, b) => a.rollNumber.localeCompare(b.rollNumber));
+      doc.setFont(undefined, "normal");
+      doc.setFontSize(7);
+
+      const drawHeader = () => {
+        doc.addPage();
+        yPosition = margin + 3;
+        doc.setFillColor(200, 200, 200);
+        xPos = margin;
+        columns.forEach((col, i) => {
+          doc.rect(xPos, yPosition, colWidths[i], headerRowHeight);
+          doc.setFontSize(7);
+          doc.setFont(undefined, "bold");
+          doc.text(col, xPos + colWidths[i] / 2, yPosition + 3.6, { align: "center" });
+          xPos += colWidths[i];
+        });
+        yPosition += headerRowHeight;
+        doc.setFont(undefined, "normal");
+      };
+
+      sorted.forEach(row => {
+        if (yPosition > pageHeight - margin - 15) drawHeader();
+
+        xPos = margin;
+        const cells = [
+          row.rollNumber,
+          row.name,
+          row.department.substring(0, 3),
+          row.present.toString(),
+          row.absent.toString(),
+          row.total.toString(),
+          row.percentage
+        ];
+
+        cells.forEach((cell, i) => {
+          doc.setDrawColor(0);
+          doc.rect(xPos, yPosition, colWidths[i], tableRowHeight);
+          const cellCenterX = xPos + colWidths[i] / 2;
+          const cellCenterY = yPosition + tableRowHeight / 2 + 0.8;
+          const align = i <= 2 ? "left" : "center";
+          const textX = align === "left" ? xPos + 1 : cellCenterX;
+          doc.text(String(cell), textX, cellCenterY, { align, maxWidth: colWidths[i] - 2 });
+          xPos += colWidths[i];
+        });
+
+        yPosition += tableRowHeight;
+      });
+
+      doc.save(`attendance_${subject?.subject_code}_aggregated_past4months_${reportMonth}.pdf`);
+      toast.success("Aggregated past 4 months report downloaded successfully");
+    } catch (error: any) {
+      toast.error("Failed to generate past 4 months report: " + error.message);
+    } finally {
+      setGeneratingReport(false);
+    }
   };
 
   const fetchEnrolledStudents = async () => {
@@ -255,8 +413,8 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
       yPosition += 6;
 
       // Table headers
-      const columns = ["Roll", "Name", "Dept", "Pres", "Abs", "Total", "%"];
-      const colPercents = [11, 16, 9, 11, 11, 21, 21];
+      const columns = ["Roll", "Name", "Dept", "Present", "Absent", "Total", "Percentage(%)"];
+      const colPercents = [11, 18, 9, 11, 11, 14, 14];
       const colWidths = colPercents.map(p => (p / 100) * contentWidth);
       const tableRowHeight = 4.5;
       const headerRowHeight = 5;
@@ -307,7 +465,7 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
         doc.setTextColor(0, 0, 0);
         const rowData = [
           student.rollNumber,
-          student.name.substring(0, 13),
+          student.name.substring(0, 20),
           student.department.substring(0, 3),
           student.presentDays.toString(),
           student.absentDays.toString(),
@@ -441,6 +599,10 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
           <Button onClick={generateReport} disabled={generatingReport}>
             {generatingReport && <Loader2 className="animate-spin mr-2" />}
             Download PDF
+          </Button>
+          <Button onClick={generatePastFourMonthsReport} disabled={generatingReport} variant="outline">
+            {generatingReport && <Loader2 className="animate-spin mr-2" />}
+            Download Past 4 Months
           </Button>
         </CardContent>
       </Card>

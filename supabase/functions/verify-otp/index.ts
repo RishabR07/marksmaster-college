@@ -4,7 +4,16 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+async function hashOTP(otp: string) {
+  const data = new TextEncoder().encode(otp);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -15,102 +24,70 @@ serve(async (req) => {
     const { email, otp, newPassword } = await req.json();
 
     if (!email || !otp || !newPassword) {
-      return new Response(
-        JSON.stringify({ error: "Email, OTP, and new password are required" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "All fields are required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     if (newPassword.length < 6) {
-      return new Response(
-        JSON.stringify({ error: "Password must be at least 6 characters" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "Password too short" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Verify OTP
-    const { data: otpData, error: otpError } = await supabaseAdmin
+    const otpHash = await hashOTP(otp);
+
+    const { data: otpRow } = await supabase
       .from("password_reset_otps")
       .select("*")
       .eq("email", email)
-      .eq("otp_code", otp)
+      .eq("otp_hash", otpHash)
       .eq("used", false)
       .gte("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
-      .limit(1)
       .maybeSingle();
 
-    if (otpError) {
-      console.error("Error verifying OTP:", otpError);
-      return new Response(
-        JSON.stringify({ error: "Failed to verify OTP" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+    if (!otpRow) {
+      return new Response(JSON.stringify({ error: "Invalid or expired OTP" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
-    if (!otpData) {
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired OTP" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+    const { data: user } = await supabase.auth.admin.getUserByEmail(email);
+    if (!user) {
+      return new Response(JSON.stringify({ error: "User not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
-    // Mark OTP as used
-    await supabaseAdmin
+    await supabase.auth.admin.updateUserById(user.id, {
+      password: newPassword,
+    });
+
+    // ✅ Mark OTP used AFTER success
+    await supabase
       .from("password_reset_otps")
       .update({ used: true })
-      .eq("id", otpData.id);
+      .eq("id", otpRow.id);
 
-    // Get user by email
-    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    if (userError) {
-      console.error("Error listing users:", userError);
-      return new Response(
-        JSON.stringify({ error: "Failed to find user" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
+    return new Response(JSON.stringify({ message: "Password reset successful" }), {
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
 
-    const user = userData.users.find(u => u.email === email);
-    
-    if (!user) {
-      return new Response(
-        JSON.stringify({ error: "User not found" }),
-        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    // Update user password
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      user.id,
-      { password: newPassword }
-    );
-
-    if (updateError) {
-      console.error("Error updating password:", updateError);
-      return new Response(
-        JSON.stringify({ error: "Failed to update password" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    console.log("Password reset successful for:", email);
-
-    return new Response(
-      JSON.stringify({ message: "Password reset successfully" }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
-  } catch (error: any) {
-    console.error("Error in verify-otp function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
+  } catch (err: any) {
+    console.error(err);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 });

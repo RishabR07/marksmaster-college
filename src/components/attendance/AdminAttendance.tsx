@@ -241,7 +241,7 @@ export const AdminAttendance = () => {
 
       // Student table headers - adjusted for proper fit
       const studentHeaders = ["Roll", "Name", "Dept", "Present", "Absent", "Total", "%"];
-      const headerColPercents = [11, 22, 9, 11, 11, 21, 16];
+      const headerColPercents = [11, 30, 9, 11, 11, 13, 15];
       const headerColWidths = headerColPercents.map(p => (p / 100) * contentWidth);
       const tableRowHeight = 4.5;
       const headerRowHeight = 5;
@@ -293,7 +293,7 @@ export const AdminAttendance = () => {
 
         const rowData = [
           student.rollNumber,
-          student.studentName.substring(0, 13),
+          student.studentName,
           student.department.substring(0, 3),
           student.present.toString(),
           student.absent.toString(),
@@ -339,7 +339,7 @@ export const AdminAttendance = () => {
 
       // Subject table headers
       const subjectHeaders = ["Code", "Subject", "Teacher", "Students", "Avg %"];
-      const subjectColPercents = [12, 28, 28, 16, 16];
+      const subjectColPercents = [12, 35, 25, 14, 14];
       const subjectColWidths = subjectColPercents.map(p => (p / 100) * contentWidth);
 
       // Draw subject header row
@@ -380,8 +380,8 @@ export const AdminAttendance = () => {
         doc.setTextColor(0, 0, 0);
         const subjectData = [
           subject.subjectCode,
-          subject.subjectName.substring(0, 18),
-          subject.teacherName.substring(0, 18),
+          subject.subjectName,
+          subject.teacherName,
           subject.totalStudents.toString(),
           subject.averageAttendance.toFixed(1)
         ];
@@ -639,7 +639,7 @@ export const AdminAttendance = () => {
                     className={student.percentage < lowAttendanceThreshold ? "bg-red-50 dark:bg-red-950/20" : ""}
                   >
                     <TableCell className="font-medium">{student.rollNumber}</TableCell>
-                    <TableCell>{student.studentName}</TableCell>
+                    <TableCell className="max-w-xs break-words">{student.studentName}</TableCell>
                     <TableCell>{student.department}</TableCell>
                     <TableCell className="text-center text-green-600">{student.present}</TableCell>
                     <TableCell className="text-center text-red-600">{student.absent}</TableCell>
