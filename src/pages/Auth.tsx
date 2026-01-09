@@ -257,11 +257,14 @@ const Auth = () => {
   // Forgot Password UI
   if (showForgotPassword) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--gradient-hero)" }}>
-        <div className="absolute top-4 right-4">
+      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-indigo-600 to-purple-700 opacity-90" />
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-purple-500/40 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/40 rounded-full blur-3xl" />
+        <div className="absolute top-4 right-4 z-10">
           <ThemeToggle />
         </div>
-        <Card className="w-full max-w-md shadow-[var(--shadow-xl)] border border-white dark:border-white/10">
+        <Card className="relative z-10 w-full max-w-md shadow-[var(--shadow-xl)] backdrop-blur-xl bg-white/90 dark:bg-black/40 border border-white/30">
           <CardHeader className="space-y-1 text-center">
             <div className="flex justify-center mb-2">
               <GraduationCap className="h-10 w-10 md:h-12 md:w-12 text-primary" />
@@ -382,11 +385,14 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--gradient-hero)" }}>
-      <div className="absolute top-4 right-4">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary via-indigo-600 to-purple-700 opacity-90" />
+      <div className="absolute -top-24 -left-24 w-96 h-96 bg-purple-500/40 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/40 rounded-full blur-3xl" />
+      <div className="absolute top-4 right-4 z-10">
         <ThemeToggle />
       </div>
-      <Card className="w-full max-w-md shadow-[var(--shadow-xl)] border border-white dark:border-white/10">
+      <Card className="relative z-10 w-full max-w-md shadow-[var(--shadow-xl)] backdrop-blur-xl bg-white/90 dark:bg-black/40 border border-white/30">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-2">
             <GraduationCap className="h-10 w-10 md:h-12 md:w-12 text-primary" />

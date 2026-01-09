@@ -11,14 +11,6 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-async function hashOTP(otp: string) {
-  const data = new TextEncoder().encode(otp);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hash))
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -38,54 +30,91 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // ✅ Proper user lookup
-    const { data: user } = await supabase.auth.admin.getUserByEmail(email);
-
-    // Security: always return success message
-    if (!user) {
+    // Use listUsers with email filter instead of getUserByEmail
+    const { data: usersData, error: userError } = await supabase.auth.admin.listUsers();
+    
+    if (userError) {
+      console.error("Error listing users:", userError);
       return new Response(JSON.stringify({ message: "If the email exists, an OTP has been sent" }), {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    // Cleanup old OTPs
+    const user = usersData.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+
+    // Security: always return success message
+    if (!user) {
+      console.log("User not found for email:", email);
+      return new Response(JSON.stringify({ message: "If the email exists, an OTP has been sent" }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Cleanup old OTPs for this email
     await supabase
       .from("password_reset_otps")
       .delete()
-      .eq("email", email)
+      .eq("email", email.toLowerCase())
       .eq("used", false);
 
     const otp = generateOTP();
-    const otpHash = await hashOTP(otp);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    await supabase.from("password_reset_otps").insert({
-      email,
-      otp_hash: otpHash,
+    // Store OTP in plain text in otp_code column
+    const { error: insertError } = await supabase.from("password_reset_otps").insert({
+      email: email.toLowerCase(),
+      otp_code: otp,
       expires_at: expiresAt,
     });
 
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
-    await fetch("https://api.resend.com/emails", {
+    if (insertError) {
+      console.error("Error inserting OTP:", insertError);
+      throw new Error("Failed to store OTP");
+    }
+
+    // Send email to the user's actual email address
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    if (!RESEND_API_KEY) {
+      console.error("RESEND_API_KEY not configured");
+      throw new Error("Email service not configured");
+    }
+
+    const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "noreply@marksmaster.com",
-        to: [email],
-        subject: "Password Reset OTP",
-        html: `<h2>Your OTP is <strong>${otp}</strong></h2><p>Valid for 10 minutes.</p>`,
+        from: "KPT Portal <noreply@marksmaster.com>",
+        to: [user.email], // Send to the user's actual email
+        subject: "Password Reset OTP - KPT Student Portal",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #3b82f6;">KPT Student Portal</h2>
+            <h3>Password Reset Request</h3>
+            <p>Your One-Time Password (OTP) for password reset is:</p>
+            <div style="background: linear-gradient(135deg, #3b82f6, #06b6d4); color: white; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+              <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px;">${otp}</span>
+            </div>
+            <p style="color: #666;">This OTP is valid for <strong>10 minutes</strong>.</p>
+            <p style="color: #666;">If you didn't request this password reset, please ignore this email.</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+            <p style="color: #999; font-size: 12px;">KPT Student Portal - Academic Management System</p>
+          </div>
+        `,
       }),
     });
+
+    const emailResult = await emailResponse.json();
+    console.log("Email sent to:", user.email, "Result:", emailResult);
 
     return new Response(JSON.stringify({ message: "OTP sent successfully" }), {
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
 
   } catch (err: any) {
-    console.error(err);
+    console.error("send-otp error:", err);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders },
