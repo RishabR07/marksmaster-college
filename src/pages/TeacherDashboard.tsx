@@ -431,19 +431,24 @@ const TeacherDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card shadow-[var(--shadow-sm)]">
-        <div className="container mx-auto px-4 py-3 md:py-4">
+      {/* Hero Header */}
+      <header className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-indigo-600 to-purple-700 opacity-90" />
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-purple-500/40 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-blue-500/40 rounded-full blur-3xl" />
+        
+        <div className="relative container mx-auto px-4 py-4 md:py-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-              <h1 className="text-lg md:text-2xl font-bold">Teacher Dashboard</h1>
+              <BookOpen className="h-6 w-6 md:h-8 md:w-8 text-white" />
+              <h1 className="text-lg md:text-2xl font-bold text-white">Teacher Dashboard</h1>
             </div>
             
             {/* Desktop Actions */}
             <div className="hidden md:flex gap-2">
               <ThemeToggle />
               <ChangePasswordDialog />
-              <Button variant="outline" onClick={signOut}>
+              <Button variant="secondary" onClick={signOut} className="bg-white/20 hover:bg-white/30 text-white border-white/30">
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </Button>
@@ -456,6 +461,7 @@ const TeacherDashboard = () => {
                 variant="ghost"
                 size="icon"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="text-white hover:bg-white/20"
               >
                 {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
@@ -464,9 +470,9 @@ const TeacherDashboard = () => {
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <div className="md:hidden mt-3 pb-3 flex flex-col gap-2 border-t border-border pt-3">
+            <div className="md:hidden mt-3 pb-3 flex flex-col gap-2 border-t border-white/20 pt-3">
               <ChangePasswordDialog />
-              <Button variant="outline" onClick={signOut} className="w-full">
+              <Button variant="secondary" onClick={signOut} className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30">
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </Button>
