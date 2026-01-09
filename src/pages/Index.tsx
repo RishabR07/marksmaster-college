@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,13 +10,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  GraduationCap,
-  BookOpen,
-  Users,
-} from "lucide-react";
+import { GraduationCap, BookOpen, Users } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0 },
+};
 
 const Index = () => {
   const { user, userRole, loading } = useAuth();
@@ -25,84 +27,126 @@ const Index = () => {
     if (!loading && user && userRole) {
       if (userRole === "teacher") navigate("/teacher");
       else if (userRole === "student") navigate("/student");
-      else if (userRole === "admin") navigate("/admin"); // backend/admin-only access
+      else if (userRole === "admin") navigate("/admin");
     }
   }, [user, userRole, loading, navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background overflow-hidden">
       <Header />
 
-      <div className="flex-1" style={{ background: "var(--gradient-hero)" }}>
-        <div className="container mx-auto px-4 py-10 md:py-16">
-          
-          {/* HERO */}
-          <div className="text-center mb-12">
+      {/* HERO SECTION */}
+      <section className="relative flex-1">
+        {/* Animated Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-indigo-600 to-purple-700 animate-gradient-x opacity-90" />
+
+        {/* Glow Effects */}
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-purple-500/40 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/40 rounded-full blur-3xl" />
+
+        <div className="relative container mx-auto px-4 py-16 md:py-24">
+          {/* HERO CONTENT */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={fadeUp}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-16"
+          >
             <div className="flex justify-center mb-6">
-              <GraduationCap className="h-16 w-16 md:h-20 md:w-20 text-primary-foreground" />
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ repeat: Infinity, duration: 6 }}
+              >
+                <GraduationCap className="h-20 w-20 text-white drop-shadow-xl" />
+              </motion.div>
             </div>
-            <h1 className="text-3xl md:text-5xl font-bold text-primary-foreground mb-4">
+
+            <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 tracking-tight">
               KPT Student Portal
             </h1>
-            <p className="text-base md:text-xl text-primary-foreground/90 max-w-3xl mx-auto">
-              A complete academic management platform for course enrollment,
-              attendance tracking, assessments, and role-based access for
-              students and faculty.
+
+            <p className="text-lg md:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
+              A next-generation academic management platform for attendance,
+              assessments, announcements, and role-based dashboards.
             </p>
-          </div>
+          </motion.div>
 
           {/* ROLE CARDS */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            transition={{ staggerChildren: 0.2 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto"
+          >
+            {/* FACULTY CARD */}
+            <motion.div variants={fadeUp}>
+              <Card className="relative group backdrop-blur-xl bg-white/80 dark:bg-black/40 border border-white/30 shadow-2xl hover:scale-[1.03] transition-all duration-300">
+                <CardHeader className="text-center">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/20">
+                    <BookOpen className="h-7 w-7 text-primary" />
+                  </div>
+                  <CardTitle className="text-2xl">Faculty</CardTitle>
+                  <CardDescription>
+                    Teaching & academic control panel
+                  </CardDescription>
+                </CardHeader>
 
-            {/* FACULTY */}
-            <Card className="shadow-[var(--shadow-xl)] hover:shadow-2xl transition-shadow border border-white dark:border-white/10">
-              <CardHeader className="text-center">
-                <BookOpen className="h-12 w-12 mx-auto mb-4 text-primary" />
-                <CardTitle className="text-2xl">Faculty</CardTitle>
-                <CardDescription>
-                  Manage subjects, attendance, and assessments
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>✓ Create & manage subjects</li>
-                  <li>✓ Enroll students</li>
-                  <li>✓ Mark daily attendance</li>
-                  <li>✓ Enter IA & assessment marks</li>
-                  <li>✓ Publish announcements & events</li>
-                </ul>
-                <Button className="w-full" onClick={() => navigate("/auth")}>
-                  Login as Faculty
-                </Button>
-              </CardContent>
-            </Card>
+                <CardContent className="space-y-5">
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li>✓ Subject & syllabus management</li>
+                    <li>✓ Student enrollment</li>
+                    <li>✓ Attendance & IA marks</li>
+                    <li>✓ Announcements & events</li>
+                    <li>✓ Performance analytics</li>
+                  </ul>
 
-            {/* STUDENT */}
-            <Card className="shadow-[var(--shadow-xl)] hover:shadow-2xl transition-shadow border border-white dark:border-white/10">
-              <CardHeader className="text-center">
-                <Users className="h-12 w-12 mx-auto mb-4 text-primary" />
-                <CardTitle className="text-2xl">Students</CardTitle>
-                <CardDescription>
-                  Track academics in one place
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>✓ View enrolled subjects</li>
-                  <li>✓ Check IA & assessment marks</li>
-                  <li>✓ Monitor attendance percentage</li>
-                  <li>✓ View grades & performance</li>
-                  <li>✓ Receive announcements</li>
-                </ul>
-                <Button className="w-full" onClick={() => navigate("/auth")}>
-                  Login as Student
-                </Button>
-              </CardContent>
-            </Card>
+                  <Button
+                    size="lg"
+                    className="w-full shadow-lg"
+                    onClick={() => navigate("/auth")}
+                  >
+                    Login as Faculty
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-          </div>
+            {/* STUDENT CARD */}
+            <motion.div variants={fadeUp}>
+              <Card className="relative group backdrop-blur-xl bg-white/80 dark:bg-black/40 border border-white/30 shadow-2xl hover:scale-[1.03] transition-all duration-300">
+                <CardHeader className="text-center">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/20">
+                    <Users className="h-7 w-7 text-primary" />
+                  </div>
+                  <CardTitle className="text-2xl">Students</CardTitle>
+                  <CardDescription>
+                    Academic progress at a glance
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent className="space-y-5">
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li>✓ Subjects & timetable</li>
+                    <li>✓ Attendance percentage</li>
+                    <li>✓ IA & exam marks</li>
+                    <li>✓ Grades & reports</li>
+                    <li>✓ Notices & updates</li>
+                  </ul>
+
+                  <Button
+                    size="lg"
+                    className="w-full shadow-lg"
+                    onClick={() => navigate("/auth")}
+                  >
+                    Login as Student
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </motion.div>
         </div>
-      </div>
+      </section>
 
       <Footer />
     </div>

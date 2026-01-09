@@ -1,59 +1,69 @@
-import { GraduationCap } from "lucide-react";
+import { motion } from "framer-motion";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-background border-t border-border mt-auto">
-      <div className="container mx-auto px-4 py-6 md:py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-          <div>
-            <div className="flex items-center gap-2 mb-3 md:mb-4">
-              {/* <GraduationCap className="h-5 w-5 md:h-6 md:w-6 text-primary" /> */}
-                <img
-    src="/kpt1.png"
-    alt="KPT Logo"
-    className="h-12 w-12 md:h-15 md:w-15 object-contain  shadow-lg"
-  />
-              <span className="font-bold text-foreground text-sm md:text-base">KPT Management</span>
+    <footer className="relative mt-auto overflow-hidden">
+      {/* Gradient Base */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-indigo-500/30 to-purple-600/40" />
+
+      {/* Glow */}
+      <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-purple-500/40 blur-3xl rounded-full" />
+
+      <div className="relative container mx-auto px-4 py-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-white">
+          {/* BRAND */}
+          <motion.div whileHover={{ y: -4 }}>
+            <div className="flex items-center gap-3 mb-4">
+              <img
+                src="/kpt1.png"
+                alt="KPT Logo"
+                className="h-11 w-11 object-contain drop-shadow-lg"
+              />
+              <span className="font-extrabold text-lg">
+                KPT Management
+              </span>
             </div>
-            <p className="text-xs md:text-sm text-muted-foreground">
-              A modern platform for managing internal assessment marks efficiently.
+            <p className="text-sm text-white/80 max-w-xs">
+              A modern academic platform for managing attendance, assessments,
+              and student performance efficiently.
             </p>
-          </div>
-          
+          </motion.div>
+
+          {/* LINKS */}
           <div>
-            <h3 className="font-semibold text-foreground mb-2 md:mb-3 text-sm md:text-base">Quick Links</h3>
-            <ul className="space-y-1 md:space-y-2 text-xs md:text-sm text-muted-foreground">
-              <li><a href="/auth" className="hover:text-primary transition-colors">Login</a></li>
-              <li><a href="/auth" className="hover:text-primary transition-colors">Register</a></li>
-              <li><a href="#features" className="hover:text-primary transition-colors">Features</a></li>
+            <h3 className="font-semibold mb-4">Quick Links</h3>
+            <ul className="space-y-2 text-sm text-white/80">
+              <li className="hover:text-white transition">Login</li>
+              <li className="hover:text-white transition">Register</li>
+              <li className="hover:text-white transition">Features</li>
             </ul>
           </div>
-          
+
+          {/* SUPPORT */}
           <div>
-            <h3 className="font-semibold text-foreground mb-2 md:mb-3 text-sm md:text-base">Support</h3>
-            <ul className="space-y-1 md:space-y-2 text-xs md:text-sm text-muted-foreground">
-              <li><a href="#help" className="hover:text-primary transition-colors">Help Center</a></li>
-              <li><a href="#contact" className="hover:text-primary transition-colors">Contact Us</a></li>
-              <li><a href="#privacy" className="hover:text-primary transition-colors">Privacy Policy</a></li>
+            <h3 className="font-semibold mb-4">Support</h3>
+            <ul className="space-y-2 text-sm text-white/80">
+              <li className="hover:text-white transition">Help Center</li>
+              <li className="hover:text-white transition">Contact Us</li>
+              <li className="hover:text-white transition">Privacy Policy</li>
             </ul>
           </div>
         </div>
-        
-        <div className="mt-6 md:mt-8 pt-6 md:pt-8 border-t border-border text-center">
-          <p className="pt-2 md:pt-4 text-center text-xs md:text-sm pb-4 md:pb-5 text-muted-foreground">
-            Copyright 2025 ©{" "}
-            <a
-              href="https://rishabshetty.vercel.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              Mesnaldo
-            </a>
-            . All Rights Reserved.
-          </p>
+
+        {/* COPYRIGHT */}
+        <div className="mt-10 pt-6 border-t border-white/20 text-center text-sm text-white/80">
+          © {currentYear}{" "}
+          <a
+            href="https://rishabshetty.vercel.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold hover:underline text-white"
+          >
+            Mesnaldo
+          </a>
+          . All Rights Reserved.
         </div>
       </div>
     </footer>
