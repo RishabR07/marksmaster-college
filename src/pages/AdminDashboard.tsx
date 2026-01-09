@@ -416,7 +416,13 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-4 md:py-8 space-y-4 md:space-y-6">
+      <main className="relative overflow-hidden min-h-[calc(100vh-120px)]">
+        {/* Background gradient effects */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-indigo-500/5 to-purple-500/5" />
+        <div className="absolute -top-48 -right-48 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-48 -left-48 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
+        
+        <div className="relative container mx-auto px-4 py-4 md:py-8 space-y-4 md:space-y-6">
         <Tabs defaultValue="users" className="space-y-4 md:space-y-6">
           <TabsList className="w-full flex flex-wrap gap-1 h-auto p-1 max-w-2xl">
             <TabsTrigger value="users" className="flex-1 min-w-[70px] text-xs md:text-sm">
@@ -853,6 +859,7 @@ const AdminDashboard = () => {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </main>
     </div>
   );
