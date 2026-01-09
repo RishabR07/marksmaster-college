@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0'
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,6 +15,36 @@ interface MarksNotificationRequest {
   maxMarks: number
   assessmentType: string
   assessmentDate: string
+}
+
+async function sendEmailWithGmail(to: string, subject: string, html: string) {
+  const client = new SMTPClient({
+    connection: {
+      hostname: "smtp.gmail.com",
+      port: 465,
+      tls: true,
+      auth: {
+        username: "shettyrishab10@gmail.com",
+        password: Deno.env.get("GMAIL_APP_PASSWORD")!,
+      },
+    },
+  });
+
+  try {
+    await client.send({
+      from: "KPT Portal <shettyrishab10@gmail.com>",
+      to: to,
+      subject: subject,
+      content: "Please view this email in an HTML-capable email client.",
+      html: html,
+    });
+    await client.close();
+    return { success: true };
+  } catch (error) {
+    console.error("Gmail SMTP error:", error);
+    await client.close();
+    throw error;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -61,51 +92,37 @@ Deno.serve(async (req) => {
 
     console.log(`Sending marks notification to ${studentEmail} for ${subjectName}`)
 
-    const resendApiKey = Deno.env.get('RESEND_API_KEY')
-    
-    const emailResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${resendApiKey}`,
-      },
-      body: JSON.stringify({
-        from: 'KPT Portal <noreply@marksmaster.com>',
-        to: [studentEmail],
-        subject: `New Marks Added - ${subjectName}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #333;">New Assessment Marks</h1>
-            <p>Hello ${studentName},</p>
-            <p>Your marks have been added for the following assessment:</p>
-            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h2 style="color: #555; margin-top: 0;">${subjectName} (${subjectCode})</h2>
-              <p style="color: #666;"><strong>Assessment:</strong> ${assessmentType}</p>
-              <p style="color: #666;"><strong>Date:</strong> ${assessmentDate}</p>
-              <div style="margin-top: 20px; padding: 15px; background-color: #fff; border-radius: 5px;">
-                <p style="font-size: 24px; font-weight: bold; color: #333; margin: 0;">
-                  ${marks} / ${maxMarks}
-                </p>
-                <p style="color: #666; margin-top: 10px;">Percentage: ${percentage}%</p>
-              </div>
-            </div>
-            <p>You can view all your marks in your student dashboard.</p>
-            <p style="margin-top: 30px;">Best regards,<br>KPT Management Team</p>
-          </div>
-        `,
-      }),
-    })
-
-    if (!emailResponse.ok) {
-      const errorData = await emailResponse.json()
-      throw new Error(`Resend API error: ${JSON.stringify(errorData)}`)
+    const GMAIL_APP_PASSWORD = Deno.env.get('GMAIL_APP_PASSWORD')
+    if (!GMAIL_APP_PASSWORD) {
+      throw new Error('GMAIL_APP_PASSWORD not configured')
     }
 
-    const emailData = await emailResponse.json()
-    console.log('Marks notification sent successfully:', emailData)
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #333;">New Assessment Marks</h1>
+        <p>Hello ${studentName},</p>
+        <p>Your marks have been added for the following assessment:</p>
+        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h2 style="color: #555; margin-top: 0;">${subjectName} (${subjectCode})</h2>
+          <p style="color: #666;"><strong>Assessment:</strong> ${assessmentType}</p>
+          <p style="color: #666;"><strong>Date:</strong> ${assessmentDate}</p>
+          <div style="margin-top: 20px; padding: 15px; background-color: #fff; border-radius: 5px;">
+            <p style="font-size: 24px; font-weight: bold; color: #333; margin: 0;">
+              ${marks} / ${maxMarks}
+            </p>
+            <p style="color: #666; margin-top: 10px;">Percentage: ${percentage}%</p>
+          </div>
+        </div>
+        <p>You can view all your marks in your student dashboard.</p>
+        <p style="margin-top: 30px;">Best regards,<br>KPT Management Team</p>
+      </div>
+    `;
+
+    await sendEmailWithGmail(studentEmail, `New Marks Added - ${subjectName}`, emailHtml);
+    console.log('Marks notification sent successfully to:', studentEmail);
 
     return new Response(
-      JSON.stringify({ success: true, messageId: emailData.id }),
+      JSON.stringify({ success: true, messageId: 'gmail-sent' }),
       {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
