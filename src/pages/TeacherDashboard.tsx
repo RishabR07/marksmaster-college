@@ -266,6 +266,7 @@ const TeacherDashboard = () => {
         }
       } catch (emailError: any) {
         console.error('Failed to send marks notification:', emailError);
+        toast.warning("Marks saved, but email notification couldn't be sent. (Email service not configured)");
       }
     }
   };
@@ -669,9 +670,10 @@ const TeacherDashboard = () => {
                                   }
                                 });
                               }
-                            } catch (emailError: any) {
-                              console.error('Failed to send enrollment notification:', emailError);
-                            }
+                             } catch (emailError: any) {
+                               console.error('Failed to send enrollment notification:', emailError);
+                               toast.warning("Enrollment saved, but email notification couldn't be sent. (Email service not configured)");
+                             }
                           }
                         }}
                         disabled={!selectedSubject}

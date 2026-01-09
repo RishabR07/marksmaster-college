@@ -106,10 +106,20 @@ serve(async (req) => {
       }),
     });
 
+    // IMPORTANT: do not leak whether an email exists. Always return a generic success message.
+    // If email provider rejects the request, log it for debugging.
+    if (!emailResponse.ok) {
+      const errorBody = await emailResponse.text();
+      console.error("Resend email failed:", emailResponse.status, errorBody);
+      return new Response(JSON.stringify({ message: "If the email exists, an OTP has been sent" }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     const emailResult = await emailResponse.json();
     console.log("Email sent to:", user.email, "Result:", emailResult);
 
-    return new Response(JSON.stringify({ message: "OTP sent successfully" }), {
+    return new Response(JSON.stringify({ message: "If the email exists, an OTP has been sent" }), {
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
 
