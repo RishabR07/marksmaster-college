@@ -81,7 +81,7 @@ const Auth = () => {
 
       if (response.error) throw response.error;
 
-      toast.success("OTP sent to your email!");
+      toast.success("If the email exists, you'll receive an OTP shortly.");
       setForgotStep("otp");
       setOtpTimeRemaining(OTP_EXPIRY_SECONDS);
       setOtpTimerActive(true);
