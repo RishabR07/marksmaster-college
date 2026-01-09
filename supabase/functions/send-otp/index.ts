@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,6 +10,36 @@ const corsHeaders = {
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+async function sendEmailWithGmail(to: string, subject: string, html: string) {
+  const client = new SMTPClient({
+    connection: {
+      hostname: "smtp.gmail.com",
+      port: 465,
+      tls: true,
+      auth: {
+        username: "shettyrishab10@gmail.com",
+        password: Deno.env.get("GMAIL_APP_PASSWORD")!,
+      },
+    },
+  });
+
+  try {
+    await client.send({
+      from: "KPT Portal <shettyrishab10@gmail.com>",
+      to: to,
+      subject: subject,
+      content: "Please view this email in an HTML-capable email client.",
+      html: html,
+    });
+    await client.close();
+    return { success: true };
+  } catch (error) {
+    console.error("Gmail SMTP error:", error);
+    await client.close();
+    throw error;
+  }
 }
 
 serve(async (req) => {
@@ -72,52 +103,37 @@ serve(async (req) => {
       throw new Error("Failed to store OTP");
     }
 
-    // Send email to the user's actual email address
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    if (!RESEND_API_KEY) {
-      console.error("RESEND_API_KEY not configured");
+    // Send email using Gmail SMTP
+    const GMAIL_APP_PASSWORD = Deno.env.get("GMAIL_APP_PASSWORD");
+    if (!GMAIL_APP_PASSWORD) {
+      console.error("GMAIL_APP_PASSWORD not configured");
       throw new Error("Email service not configured");
     }
 
-    const emailResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "KPT Portal <noreply@marksmaster.com>",
-        to: [user.email], // Send to the user's actual email
-        subject: "Password Reset OTP - KPT Student Portal",
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #3b82f6;">KPT Student Portal</h2>
-            <h3>Password Reset Request</h3>
-            <p>Your One-Time Password (OTP) for password reset is:</p>
-            <div style="background: linear-gradient(135deg, #3b82f6, #06b6d4); color: white; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-              <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px;">${otp}</span>
-            </div>
-            <p style="color: #666;">This OTP is valid for <strong>10 minutes</strong>.</p>
-            <p style="color: #666;">If you didn't request this password reset, please ignore this email.</p>
-            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-            <p style="color: #999; font-size: 12px;">KPT Student Portal - Academic Management System</p>
-          </div>
-        `,
-      }),
-    });
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #3b82f6;">KPT Student Portal</h2>
+        <h3>Password Reset Request</h3>
+        <p>Your One-Time Password (OTP) for password reset is:</p>
+        <div style="background: linear-gradient(135deg, #3b82f6, #06b6d4); color: white; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px;">${otp}</span>
+        </div>
+        <p style="color: #666;">This OTP is valid for <strong>10 minutes</strong>.</p>
+        <p style="color: #666;">If you didn't request this password reset, please ignore this email.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+        <p style="color: #999; font-size: 12px;">KPT Student Portal - Academic Management System</p>
+      </div>
+    `;
 
-    // IMPORTANT: do not leak whether an email exists. Always return a generic success message.
-    // If email provider rejects the request, log it for debugging.
-    if (!emailResponse.ok) {
-      const errorBody = await emailResponse.text();
-      console.error("Resend email failed:", emailResponse.status, errorBody);
+    try {
+      await sendEmailWithGmail(user.email!, "Password Reset OTP - KPT Student Portal", emailHtml);
+      console.log("Email sent successfully to:", user.email);
+    } catch (emailError) {
+      console.error("Failed to send email:", emailError);
       return new Response(JSON.stringify({ message: "If the email exists, an OTP has been sent" }), {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
-
-    const emailResult = await emailResponse.json();
-    console.log("Email sent to:", user.email, "Result:", emailResult);
 
     return new Response(JSON.stringify({ message: "If the email exists, an OTP has been sent" }), {
       headers: { "Content-Type": "application/json", ...corsHeaders },

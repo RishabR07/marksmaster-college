@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0'
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +12,36 @@ interface EnrollmentNotificationRequest {
   subjectName: string
   subjectCode: string
   teacherName: string
+}
+
+async function sendEmailWithGmail(to: string, subject: string, html: string) {
+  const client = new SMTPClient({
+    connection: {
+      hostname: "smtp.gmail.com",
+      port: 465,
+      tls: true,
+      auth: {
+        username: "shettyrishab10@gmail.com",
+        password: Deno.env.get("GMAIL_APP_PASSWORD")!,
+      },
+    },
+  });
+
+  try {
+    await client.send({
+      from: "KPT Portal <shettyrishab10@gmail.com>",
+      to: to,
+      subject: subject,
+      content: "Please view this email in an HTML-capable email client.",
+      html: html,
+    });
+    await client.close();
+    return { success: true };
+  } catch (error) {
+    console.error("Gmail SMTP error:", error);
+    await client.close();
+    throw error;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -47,45 +78,31 @@ Deno.serve(async (req) => {
 
     console.log(`Sending enrollment notification to ${studentEmail} for ${subjectName}`)
 
-    const resendApiKey = Deno.env.get('RESEND_API_KEY')
-    
-    const emailResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${resendApiKey}`,
-      },
-      body: JSON.stringify({
-        from: 'KPT Portal <noreply@marksmaster.com>',
-        to: [studentEmail],
-        subject: `You've been enrolled in ${subjectName}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #333;">Subject Enrollment Notification</h1>
-            <p>Hello ${studentName},</p>
-            <p>You have been enrolled in the following subject:</p>
-            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h2 style="color: #555; margin-top: 0;">${subjectName}</h2>
-              <p style="color: #666;"><strong>Subject Code:</strong> ${subjectCode}</p>
-              <p style="color: #666;"><strong>Teacher:</strong> ${teacherName}</p>
-            </div>
-            <p>You can now view this subject and your marks in your student dashboard.</p>
-            <p style="margin-top: 30px;">Best regards,<br>KPT Management Team</p>
-          </div>
-        `,
-      }),
-    })
-
-    if (!emailResponse.ok) {
-      const errorData = await emailResponse.json()
-      throw new Error(`Resend API error: ${JSON.stringify(errorData)}`)
+    const GMAIL_APP_PASSWORD = Deno.env.get('GMAIL_APP_PASSWORD')
+    if (!GMAIL_APP_PASSWORD) {
+      throw new Error('GMAIL_APP_PASSWORD not configured')
     }
 
-    const emailData = await emailResponse.json()
-    console.log('Enrollment notification sent successfully:', emailData)
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #333;">Subject Enrollment Notification</h1>
+        <p>Hello ${studentName},</p>
+        <p>You have been enrolled in the following subject:</p>
+        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h2 style="color: #555; margin-top: 0;">${subjectName}</h2>
+          <p style="color: #666;"><strong>Subject Code:</strong> ${subjectCode}</p>
+          <p style="color: #666;"><strong>Teacher:</strong> ${teacherName}</p>
+        </div>
+        <p>You can now view this subject and your marks in your student dashboard.</p>
+        <p style="margin-top: 30px;">Best regards,<br>KPT Management Team</p>
+      </div>
+    `;
+
+    await sendEmailWithGmail(studentEmail, `You've been enrolled in ${subjectName}`, emailHtml);
+    console.log('Enrollment notification sent successfully to:', studentEmail);
 
     return new Response(
-      JSON.stringify({ success: true, messageId: emailData.id }),
+      JSON.stringify({ success: true, messageId: 'gmail-sent' }),
       {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
