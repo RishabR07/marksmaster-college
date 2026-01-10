@@ -54,6 +54,34 @@ interface EnrolledStudent extends Student {
   enrollment_id: string;
 }
 
+// Predefined subjects organized by year and branch
+const PREDEFINED_SUBJECTS = {
+  "2nd Year CSE": [
+    { name: "Data Base Management System", code: "DBMS301" },
+    { name: "Python Programming", code: "PY302" },
+    { name: "Computer Hardware, Maintenance and Administration", code: "CHM303" },
+    { name: "Computer Networks", code: "CN304" },
+    { name: "ಸಾಹಿತ್ಯ ಸಿಂಚನ-II / ಬಳಕೆ ಕನ್ನಡ-II", code: "KAN305" },
+    { name: "Data Structures with Python", code: "DSP306" },
+    { name: "Operating System and Administration", code: "OSA307" },
+    { name: "Object Oriented Programming and Design with Java", code: "JAVA308" },
+    { name: "Software Engineering Principles and Practices", code: "SE309" },
+    { name: "Indian Constitution", code: "IC310" },
+  ],
+  "3rd Year - Full Stack Development": [
+    { name: "Full Stack Development", code: "FSD501" },
+  ],
+  "3rd Year - AI & ML": [
+    { name: "Artificial Intelligence and Machine Learning", code: "AIML501" },
+  ],
+  "3rd Year - Cloud Computing": [
+    { name: "Cloud Computing", code: "CC501" },
+  ],
+  "3rd Year - Cyber Security": [
+    { name: "Cyber Security", code: "CS501" },
+  ],
+};
+
 const TeacherDashboard = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -532,10 +560,65 @@ const TeacherDashboard = () => {
             <Card className="shadow-[var(--shadow-md)] border border-white dark:border-white/10">
               <CardHeader>
                 <CardTitle>Add New Subject</CardTitle>
-                <CardDescription>Create a new subject to manage assessments</CardDescription>
+                <CardDescription>Select from predefined subjects or enter custom details</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleAddSubject} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Select Predefined Subject</Label>
+                    <Select
+                      onValueChange={(value) => {
+                        const allSubjects = [
+                          ...PREDEFINED_SUBJECTS["2nd Year CSE"],
+                          ...PREDEFINED_SUBJECTS["3rd Year - Full Stack Development"],
+                          ...PREDEFINED_SUBJECTS["3rd Year - AI & ML"],
+                          ...PREDEFINED_SUBJECTS["3rd Year - Cloud Computing"],
+                          ...PREDEFINED_SUBJECTS["3rd Year - Cyber Security"],
+                        ];
+                        const selected = allSubjects.find(s => s.code === value);
+                        if (selected) {
+                          setSubjectName(selected.name);
+                          setSubjectCode(selected.code);
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a subject or enter manually below" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[400px]">
+                        <div className="px-2 py-1.5 text-sm font-semibold text-primary bg-muted">2nd Year - CSE</div>
+                        {PREDEFINED_SUBJECTS["2nd Year CSE"].map((subject) => (
+                          <SelectItem key={subject.code} value={subject.code}>
+                            {subject.name} ({subject.code})
+                          </SelectItem>
+                        ))}
+                        <div className="px-2 py-1.5 text-sm font-semibold text-primary bg-muted mt-2">3rd Year - Full Stack Development</div>
+                        {PREDEFINED_SUBJECTS["3rd Year - Full Stack Development"].map((subject) => (
+                          <SelectItem key={subject.code} value={subject.code}>
+                            {subject.name} ({subject.code})
+                          </SelectItem>
+                        ))}
+                        <div className="px-2 py-1.5 text-sm font-semibold text-primary bg-muted mt-2">3rd Year - AI & ML</div>
+                        {PREDEFINED_SUBJECTS["3rd Year - AI & ML"].map((subject) => (
+                          <SelectItem key={subject.code} value={subject.code}>
+                            {subject.name} ({subject.code})
+                          </SelectItem>
+                        ))}
+                        <div className="px-2 py-1.5 text-sm font-semibold text-primary bg-muted mt-2">3rd Year - Cloud Computing</div>
+                        {PREDEFINED_SUBJECTS["3rd Year - Cloud Computing"].map((subject) => (
+                          <SelectItem key={subject.code} value={subject.code}>
+                            {subject.name} ({subject.code})
+                          </SelectItem>
+                        ))}
+                        <div className="px-2 py-1.5 text-sm font-semibold text-primary bg-muted mt-2">3rd Year - Cyber Security</div>
+                        {PREDEFINED_SUBJECTS["3rd Year - Cyber Security"].map((subject) => (
+                          <SelectItem key={subject.code} value={subject.code}>
+                            {subject.name} ({subject.code})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="subject-name">Subject Name</Label>
