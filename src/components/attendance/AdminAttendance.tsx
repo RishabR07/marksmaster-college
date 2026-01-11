@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Calendar, Download, Users, BookOpen, TrendingUp, Loader2 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend } from "date-fns";
+import { savePdfDocument } from "@/lib/pdfDownload";
 
 // Dynamic import for jsPDF
 const getJsPDF = async () => {
@@ -435,9 +436,8 @@ export const AdminAttendance = () => {
         });
       }
 
-      // Save PDF
-      doc.save(`attendance_report_${reportMonth}.pdf`);
-      toast.success("Report downloaded successfully");
+      const result = await savePdfDocument(doc, `attendance_report_${reportMonth}.pdf`);
+      toast.success(result === "shared" ? "Report ready to share/save" : "Report downloaded successfully");
     } catch (error: any) {
       toast.error("Failed to generate report: " + error.message);
     } finally {

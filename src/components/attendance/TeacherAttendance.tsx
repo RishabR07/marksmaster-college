@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Calendar, Check, X, Download, Loader2 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { savePdfDocument } from "@/lib/pdfDownload";
 
 interface Subject {
   id: string;
@@ -222,17 +223,15 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
         yPosition += tableRowHeight;
       });
 
-      // Mobile-compatible download
-      const pdfBlob = doc.output('blob');
-      const url = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `attendance_${subject?.subject_code}_aggregated_past4months_${reportMonth}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      toast.success("Aggregated past 4 months report downloaded successfully");
+      const result = await savePdfDocument(
+        doc,
+        `attendance_${subject?.subject_code}_aggregated_past4months_${reportMonth}.pdf`
+      );
+      toast.success(
+        result === "shared"
+          ? "Report ready to share/save"
+          : "Aggregated past 4 months report downloaded successfully"
+      );
     } catch (error: any) {
       toast.error("Failed to generate past 4 months report: " + error.message);
     } finally {
@@ -504,17 +503,13 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
         yPosition += tableRowHeight;
       });
 
-      // Mobile-compatible download
-      const pdfBlob = doc.output('blob');
-      const url = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `attendance_${subject?.subject_code}_${reportMonth}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      toast.success("Report downloaded successfully");
+      const result = await savePdfDocument(
+        doc,
+        `attendance_${subject?.subject_code}_${reportMonth}.pdf`
+      );
+      toast.success(
+        result === "shared" ? "Report ready to share/save" : "Report downloaded successfully"
+      );
     } catch (error: any) {
       toast.error("Failed to generate report: " + error.message);
     } finally {
