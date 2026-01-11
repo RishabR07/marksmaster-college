@@ -222,7 +222,16 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
         yPosition += tableRowHeight;
       });
 
-      doc.save(`attendance_${subject?.subject_code}_aggregated_past4months_${reportMonth}.pdf`);
+      // Mobile-compatible download
+      const pdfBlob = doc.output('blob');
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `attendance_${subject?.subject_code}_aggregated_past4months_${reportMonth}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       toast.success("Aggregated past 4 months report downloaded successfully");
     } catch (error: any) {
       toast.error("Failed to generate past 4 months report: " + error.message);
@@ -495,7 +504,16 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
         yPosition += tableRowHeight;
       });
 
-      doc.save(`attendance_${subject?.subject_code}_${reportMonth}.pdf`);
+      // Mobile-compatible download
+      const pdfBlob = doc.output('blob');
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `attendance_${subject?.subject_code}_${reportMonth}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       toast.success("Report downloaded successfully");
     } catch (error: any) {
       toast.error("Failed to generate report: " + error.message);
