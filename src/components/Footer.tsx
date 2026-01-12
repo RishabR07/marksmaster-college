@@ -66,7 +66,7 @@ const Footer = () => {
             rel="noopener noreferrer"
             className="font-semibold hover:underline text-white"
           >
-            Mesnaldo
+            Sssssssssssssssssssssssss
           </a>
           . All Rights Reserved.
         </div>
