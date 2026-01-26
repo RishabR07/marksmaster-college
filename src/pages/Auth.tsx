@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { GraduationCap, ArrowLeft } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { ThemeToggle } from "@/components/ThemeToggle";
+
 
 type ForgotPasswordStep = "email" | "otp" | "newPassword";
 
@@ -261,9 +261,6 @@ const Auth = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-indigo-600 to-purple-700 opacity-90" />
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-purple-500/40 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/40 rounded-full blur-3xl" />
-        <div className="absolute top-4 right-4 z-10">
-          <ThemeToggle />
-        </div>
         <Card className="relative z-10 w-full max-w-md shadow-[var(--shadow-xl)] backdrop-blur-xl bg-white/90 dark:bg-black/40 border border-white/30">
           <CardHeader className="space-y-1 text-center">
             <div className="flex justify-center mb-2">
@@ -389,9 +386,6 @@ const Auth = () => {
       <div className="absolute inset-0 bg-gradient-to-br from-primary via-indigo-600 to-purple-700 opacity-90" />
       <div className="absolute -top-24 -left-24 w-96 h-96 bg-purple-500/40 rounded-full blur-3xl" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/40 rounded-full blur-3xl" />
-      <div className="absolute top-4 right-4 z-10">
-        <ThemeToggle />
-      </div>
       <Card className="relative z-10 w-full max-w-md shadow-[var(--shadow-xl)] backdrop-blur-xl bg-white/90 dark:bg-black/40 border border-white/30">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-2">

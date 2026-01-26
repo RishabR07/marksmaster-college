@@ -31,7 +31,7 @@ import { TeacherAttendance } from "@/components/attendance/TeacherAttendance";
 import { TeacherEventsManager } from "@/components/events/TeacherEventsManager";
 import { TeacherAnnouncementsManager } from "@/components/events/TeacherAnnouncementsManager";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
-import { ThemeToggle } from "@/components/ThemeToggle";
+
 
 /* 🔹 REST OF YOUR FILE IS 100% SAME */
 
@@ -475,7 +475,6 @@ const TeacherDashboard = () => {
             
             {/* Desktop Actions */}
             <div className="hidden md:flex gap-2">
-              <ThemeToggle />
               <ChangePasswordDialog />
               <Button variant="secondary" onClick={signOut} className="bg-white/20 hover:bg-white/30 text-white border-white/30">
                 <LogOut className="h-4 w-4 mr-2" />
@@ -485,7 +484,6 @@ const TeacherDashboard = () => {
 
             {/* Mobile Actions */}
             <div className="flex md:hidden items-center gap-2">
-              <ThemeToggle />
               <Button
                 variant="ghost"
                 size="icon"

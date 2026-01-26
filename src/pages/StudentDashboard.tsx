@@ -12,7 +12,7 @@ import { StudentEventsManager } from "@/components/events/StudentEventsManager";
 import { AnnouncementsList } from "@/components/events/AnnouncementsList";
 import { StudentIAMarks } from "@/components/attendance/StudentIAMarks";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
-import { ThemeToggle } from "@/components/ThemeToggle";
+
 
 interface Mark {
   id: string;
@@ -157,9 +157,7 @@ const StudentDashboard = () => {
               <h1 className="text-lg md:text-2xl font-bold text-white">Student Dashboard</h1>
             </div>
             
-            {/* Desktop Actions */}
             <div className="hidden md:flex gap-2">
-              <ThemeToggle />
               <ChangePasswordDialog />
               <Button variant="secondary" onClick={signOut} className="bg-white/20 hover:bg-white/30 text-white border-white/30">
                 <LogOut className="h-4 w-4 mr-2" />
@@ -169,7 +167,6 @@ const StudentDashboard = () => {
 
             {/* Mobile Actions */}
             <div className="flex md:hidden items-center gap-2">
-              <ThemeToggle />
               <Button
                 variant="ghost"
                 size="icon"
