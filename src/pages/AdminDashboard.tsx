@@ -18,7 +18,7 @@ import { AdminAttendance } from "@/components/attendance/AdminAttendance";
 import { AdminEventsManager } from "@/components/events/AdminEventsManager";
 import { AdminAnnouncementsManager } from "@/components/events/AdminAnnouncementsManager";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
-import { ThemeToggle } from "@/components/ThemeToggle";
+
 
 interface UserData {
   id: string;
@@ -379,7 +379,7 @@ const AdminDashboard = () => {
                 <Upload className="mr-2 h-4 w-4" />
                 Bulk Import
               </Button>
-              <ThemeToggle />
+              <ChangePasswordDialog />
               <ChangePasswordDialog />
               <Button onClick={signOut} variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30">
                 Sign Out
@@ -388,7 +388,6 @@ const AdminDashboard = () => {
 
             {/* Mobile Actions */}
             <div className="flex md:hidden items-center gap-2">
-              <ThemeToggle />
               <Button
                 variant="ghost"
                 size="icon"

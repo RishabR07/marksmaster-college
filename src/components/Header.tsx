@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { ThemeToggle } from "@/components/ThemeToggle";
+
 
 const Header = () => {
   const navigate = useNavigate();
@@ -34,7 +34,6 @@ const Header = () => {
 
           {/* DESKTOP NAV */}
           <nav className="hidden md:flex items-center gap-4">
-            <ThemeToggle />
 
             <Button
               variant="ghost"
@@ -54,7 +53,6 @@ const Header = () => {
 
           {/* MOBILE TOGGLE */}
           <div className="flex md:hidden items-center gap-2">
-            <ThemeToggle />
             <Button
               variant="ghost"
               size="icon"
