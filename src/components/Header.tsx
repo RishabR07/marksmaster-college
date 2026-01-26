@@ -11,8 +11,8 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50">
-      {/* Glass + Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/40 via-indigo-500/30 to-purple-600/40 backdrop-blur-xl border-b border-white/10" />
+      {/* Blue Glass Header */}
+      <div className="absolute inset-0 bg-primary/90 backdrop-blur-xl border-b border-primary-foreground/10" />
 
       <div className="relative container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
@@ -27,7 +27,7 @@ const Header = () => {
               alt="KPT Logo"
               className="h-11 w-11 object-contain drop-shadow-xl"
             />
-            <span className="text-lg md:text-xl font-extrabold tracking-wide text-white">
+            <span className="text-lg md:text-xl font-extrabold tracking-wide text-primary-foreground">
               KPT Management
             </span>
           </motion.div>
@@ -38,14 +38,14 @@ const Header = () => {
 
             <Button
               variant="ghost"
-              className="text-white hover:bg-white/10"
+              className="text-primary-foreground hover:bg-primary-foreground/10"
               onClick={() => navigate("/auth")}
             >
               Login
             </Button>
 
             <Button
-              className="bg-white text-primary font-semibold hover:bg-white/90 shadow-lg"
+              className="bg-primary-foreground text-primary font-semibold hover:bg-primary-foreground/90 shadow-lg"
               onClick={() => navigate("/auth")}
             >
               Get Started
@@ -58,7 +58,7 @@ const Header = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="text-white"
+              className="text-primary-foreground"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X /> : <Menu />}
@@ -73,7 +73,7 @@ const Header = () => {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="md:hidden mt-4 rounded-xl bg-white/90 dark:bg-black/60 backdrop-blur-xl border border-white/20 shadow-xl p-4 flex flex-col gap-3"
+              className="md:hidden mt-4 rounded-xl bg-card backdrop-blur-xl border border-border shadow-xl p-4 flex flex-col gap-3"
             >
               <Button
                 variant="ghost"

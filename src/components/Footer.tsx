@@ -5,14 +5,14 @@ const Footer = () => {
 
   return (
     <footer className="relative mt-auto overflow-hidden">
-      {/* Gradient Base */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-indigo-500/30 to-purple-600/40" />
+      {/* Blue Gradient Base */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent" />
 
-      {/* Glow */}
-      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-80 h-80 md:w-96 md:h-96 bg-purple-500/40 blur-3xl rounded-full" />
+      {/* Subtle Glow */}
+      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-80 h-80 md:w-96 md:h-96 bg-primary-foreground/10 blur-3xl rounded-full" />
 
       <div className="relative container mx-auto px-4 sm:px-6 py-10">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3 text-white text-center md:text-left">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3 text-primary-foreground text-center md:text-left">
 
           {/* BRAND */}
           <motion.div
@@ -30,7 +30,7 @@ const Footer = () => {
               </span>
             </div>
 
-            <p className="text-sm text-white/80 max-w-xs">
+            <p className="text-sm text-primary-foreground/80 max-w-xs">
               A modern academic platform for managing attendance, assessments,
               and student performance efficiently.
             </p>
@@ -39,32 +39,32 @@ const Footer = () => {
           {/* LINKS */}
           <div>
             <h3 className="font-semibold mb-4">Quick Links</h3>
-            <ul className="space-y-3 text-sm text-white/80">
-              <li className="hover:text-white transition cursor-pointer">Login</li>
-              <li className="hover:text-white transition cursor-pointer">Register</li>
-              <li className="hover:text-white transition cursor-pointer">Features</li>
+            <ul className="space-y-3 text-sm text-primary-foreground/80">
+              <li className="hover:text-primary-foreground transition cursor-pointer">Login</li>
+              <li className="hover:text-primary-foreground transition cursor-pointer">Register</li>
+              <li className="hover:text-primary-foreground transition cursor-pointer">Features</li>
             </ul>
           </div>
 
           {/* SUPPORT */}
           <div>
             <h3 className="font-semibold mb-4">Support</h3>
-            <ul className="space-y-3 text-sm text-white/80">
-              <li className="hover:text-white transition cursor-pointer">Help Center</li>
-              <li className="hover:text-white transition cursor-pointer">Contact Us</li>
-              <li className="hover:text-white transition cursor-pointer">Privacy Policy</li>
+            <ul className="space-y-3 text-sm text-primary-foreground/80">
+              <li className="hover:text-primary-foreground transition cursor-pointer">Help Center</li>
+              <li className="hover:text-primary-foreground transition cursor-pointer">Contact Us</li>
+              <li className="hover:text-primary-foreground transition cursor-pointer">Privacy Policy</li>
             </ul>
           </div>
         </div>
 
         {/* COPYRIGHT */}
-        <div className="mt-10 pt-6 border-t border-white/20 text-center text-xs sm:text-sm text-white/80">
+        <div className="mt-10 pt-6 border-t border-primary-foreground/20 text-center text-xs sm:text-sm text-primary-foreground/80">
           © {currentYear}{" "}
           <a
             href="https://rishabshetty.vercel.app"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-semibold hover:underline text-white"
+            className="font-semibold hover:underline text-primary-foreground"
           >
             Mesnaldo
           </a>

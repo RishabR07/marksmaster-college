@@ -37,12 +37,12 @@ const Index = () => {
 
       {/* HERO SECTION */}
       <section className="relative flex-1">
-        {/* Animated Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary via-indigo-600 to-purple-700 animate-gradient-x opacity-90" />
+        {/* Blue Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent" />
 
-        {/* Glow Effects */}
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-purple-500/40 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/40 rounded-full blur-3xl" />
+        {/* Subtle Glow Effects */}
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/30 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/30 rounded-full blur-3xl" />
 
         <div className="relative container mx-auto px-4 py-16 md:py-24">
           {/* HERO CONTENT */}
@@ -58,15 +58,15 @@ const Index = () => {
                 animate={{ rotate: [0, 10, -10, 0] }}
                 transition={{ repeat: Infinity, duration: 6 }}
               >
-                <GraduationCap className="h-20 w-20 text-white drop-shadow-xl" />
+                <GraduationCap className="h-20 w-20 text-primary-foreground drop-shadow-xl" />
               </motion.div>
             </div>
 
-            <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 tracking-tight">
+            <h1 className="text-4xl md:text-6xl font-extrabold text-primary-foreground mb-6 tracking-tight">
               KPT Student Portal
             </h1>
 
-            <p className="text-lg md:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-primary-foreground/90 max-w-3xl mx-auto leading-relaxed">
               A next-generation academic management platform for attendance,
               assessments, announcements, and role-based dashboards.
             </p>
@@ -81,12 +81,12 @@ const Index = () => {
           >
             {/* FACULTY CARD */}
             <motion.div variants={fadeUp}>
-              <Card className="relative group backdrop-blur-xl bg-white/80 dark:bg-black/40 border border-white/30 shadow-2xl hover:scale-[1.03] transition-all duration-300">
+              <Card className="relative group backdrop-blur-xl bg-card/95 border border-border shadow-2xl hover:scale-[1.03] transition-all duration-300">
                 <CardHeader className="text-center">
                   <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/20">
                     <BookOpen className="h-7 w-7 text-primary" />
                   </div>
-                  <CardTitle className="text-2xl">Faculty</CardTitle>
+                  <CardTitle className="text-2xl text-card-foreground">Faculty</CardTitle>
                   <CardDescription>
                     Teaching & academic control panel
                   </CardDescription>
@@ -114,12 +114,12 @@ const Index = () => {
 
             {/* STUDENT CARD */}
             <motion.div variants={fadeUp}>
-              <Card className="relative group backdrop-blur-xl bg-white/80 dark:bg-black/40 border border-white/30 shadow-2xl hover:scale-[1.03] transition-all duration-300">
+              <Card className="relative group backdrop-blur-xl bg-card/95 border border-border shadow-2xl hover:scale-[1.03] transition-all duration-300">
                 <CardHeader className="text-center">
                   <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/20">
                     <Users className="h-7 w-7 text-primary" />
                   </div>
-                  <CardTitle className="text-2xl">Students</CardTitle>
+                  <CardTitle className="text-2xl text-card-foreground">Students</CardTitle>
                   <CardDescription>
                     Academic progress at a glance
                   </CardDescription>
