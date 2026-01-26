@@ -62,11 +62,11 @@ const Index = () => {
               </motion.div>
             </div>
 
-            <h1 className="text-4xl md:text-6xl font-extrabold text-primary-foreground mb-6 tracking-tight">
+            <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 tracking-tight">
               KPT Student Portal
             </h1>
 
-            <p className="text-lg md:text-xl text-primary-foreground/90 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
               A next-generation academic management platform for attendance,
               assessments, announcements, and role-based dashboards.
             </p>
