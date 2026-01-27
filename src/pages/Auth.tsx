@@ -257,10 +257,10 @@ const Auth = () => {
   // Forgot Password UI
   if (showForgotPassword) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary via-indigo-600 to-purple-700 opacity-90" />
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-purple-500/40 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/40 rounded-full blur-3xl" />
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-accent opacity-90" />
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/40 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/40 rounded-full blur-3xl" />
         <Card className="relative z-10 w-full max-w-md shadow-[var(--shadow-xl)] backdrop-blur-xl bg-white/90 dark:bg-black/40 border border-white/30">
           <CardHeader className="space-y-1 text-center">
             <div className="flex justify-center mb-2">
@@ -383,9 +383,9 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary via-indigo-600 to-purple-700 opacity-90" />
-      <div className="absolute -top-24 -left-24 w-96 h-96 bg-purple-500/40 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/40 rounded-full blur-3xl" />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-accent opacity-90" />
+      <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/40 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/40 rounded-full blur-3xl" />
       <Card className="relative z-10 w-full max-w-md shadow-[var(--shadow-xl)] backdrop-blur-xl bg-white/90 dark:bg-black/40 border border-white/30">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-2">
