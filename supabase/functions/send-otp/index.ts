@@ -49,8 +49,17 @@ serve(async (req) => {
 
   try {
     const { email } = await req.json();
-    if (!email) {
+    if (!email || typeof email !== 'string') {
       return new Response(JSON.stringify({ error: "Email is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return new Response(JSON.stringify({ error: "Invalid email format" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
@@ -60,6 +69,28 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Rate limiting: Check recent OTP attempts for this email (max 3 per 10 minutes)
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { count: recentAttempts, error: countError } = await supabase
+      .from("password_reset_otps")
+      .select("*", { count: "exact", head: true })
+      .eq("email", normalizedEmail)
+      .gte("created_at", tenMinutesAgo);
+
+    if (countError) {
+      console.error("Error checking rate limit:", countError);
+    }
+
+    if (recentAttempts !== null && recentAttempts >= 3) {
+      console.log("Rate limit exceeded for email:", normalizedEmail);
+      return new Response(
+        JSON.stringify({ error: "Too many OTP requests. Please try again in 10 minutes." }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     // Use listUsers with email filter instead of getUserByEmail
     const { data: usersData, error: userError } = await supabase.auth.admin.listUsers();
@@ -71,29 +102,30 @@ serve(async (req) => {
       });
     }
 
-    const user = usersData.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    const user = usersData.users.find(u => u.email?.toLowerCase() === normalizedEmail);
 
     // Security: always return success message
     if (!user) {
-      console.log("User not found for email:", email);
+      console.log("User not found for email:", normalizedEmail);
       return new Response(JSON.stringify({ message: "If the email exists, an OTP has been sent" }), {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    // Cleanup old OTPs for this email
+    // Cleanup old expired OTPs for this email (keep rate limit check accurate)
     await supabase
       .from("password_reset_otps")
       .delete()
-      .eq("email", email.toLowerCase())
-      .eq("used", false);
+      .eq("email", normalizedEmail)
+      .eq("used", false)
+      .lt("expires_at", new Date().toISOString());
 
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
     // Store OTP in plain text in otp_code column
     const { error: insertError } = await supabase.from("password_reset_otps").insert({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       otp_code: otp,
       expires_at: expiresAt,
     });
