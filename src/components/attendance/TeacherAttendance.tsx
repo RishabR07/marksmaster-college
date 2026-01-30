@@ -47,7 +47,8 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
   const [pendingAttendance, setPendingAttendance] = useState<Map<string, AttendanceStatus>>(new Map());
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [reportMonth, setReportMonth] = useState(format(new Date(), "yyyy-MM"));
+  const [reportFromDate, setReportFromDate] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
+  const [reportToDate, setReportToDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [generatingReport, setGeneratingReport] = useState(false);
 
   /* ---------------- FETCH DATA ---------------- */
@@ -74,30 +75,28 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
     else setSubjects(data || []);
   };
 
-  const generatePastFourMonthsReport = async () => {
+  const generateDateRangeReport = async () => {
     if (!selectedSubject) {
       toast.error("Please select a subject first");
       return;
     }
 
-    if (!reportMonth || !/^\d{4}-\d{2}$/.test(reportMonth)) {
-      toast.error("Please select a valid month for the report");
+    if (!reportFromDate || !reportToDate) {
+      toast.error("Please select both from and to dates");
+      return;
+    }
+
+    const fromDate = new Date(reportFromDate);
+    const toDate = new Date(reportToDate);
+
+    if (fromDate > toDate) {
+      toast.error("From date must be before to date");
       return;
     }
 
     setGeneratingReport(true);
 
     try {
-      const [baseYear, baseMonth] = reportMonth.split("-").map(Number);
-      if (Number.isNaN(baseYear) || Number.isNaN(baseMonth) || baseMonth < 1 || baseMonth > 12) {
-        throw new Error("Invalid report month");
-      }
-      const baseDate = new Date(baseYear, baseMonth - 1);
-
-      // overall range: start of month 3 months before baseDate up to end of baseDate month
-      const rangeStart = startOfMonth(subMonths(baseDate, 3));
-      const rangeEnd = endOfMonth(baseDate);
-
       const subject = subjects.find(s => s.id === selectedSubject);
       const { jsPDF } = await import("jspdf");
       const doc = new jsPDF();
@@ -109,17 +108,17 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
       const tableRowHeight = 4.5;
       const headerRowHeight = 6;
 
-      // fetch attendance for the whole 4-month range once
+      // fetch attendance for the date range
       const { data: attendanceData, error } = await supabase
         .from("attendance")
         .select("*")
         .eq("subject_id", selectedSubject)
-        .gte("attendance_date", format(rangeStart, "yyyy-MM-dd"))
-        .lte("attendance_date", format(rangeEnd, "yyyy-MM-dd"));
+        .gte("attendance_date", reportFromDate)
+        .lte("attendance_date", reportToDate);
 
       if (error) throw error;
 
-      // aggregate per student across the 4 months
+      // aggregate per student
       const aggregatedStats = enrolledStudents.map(student => {
         const records = attendanceData?.filter(a => a.student_id === student.id) || [];
         const present = records.filter(r => r.status === "present" || r.status === "late").length;
@@ -147,7 +146,7 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
       doc.setFontSize(13);
       doc.setFont(undefined, "bold");
       doc.text(
-        `Attendance (Aggregated) - ${subject?.subject_name} (${subject?.subject_code})`,
+        `Attendance Report - ${subject?.subject_name} (${subject?.subject_code})`,
         margin,
         yPosition
       );
@@ -155,7 +154,7 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
       doc.setFontSize(9);
       doc.setFont(undefined, "normal");
       doc.text(
-        `Period: ${format(rangeStart, "MMM yyyy")} — ${format(rangeEnd, "MMM yyyy")}`,
+        `Period: ${format(fromDate, "dd MMM yyyy")} — ${format(toDate, "dd MMM yyyy")}`,
         margin,
         yPosition
       );
@@ -225,15 +224,15 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
 
       const result = await savePdfDocument(
         doc,
-        `attendance_${subject?.subject_code}_aggregated_past4months_${reportMonth}.pdf`
+        `attendance_${subject?.subject_code}_${reportFromDate}_to_${reportToDate}.pdf`
       );
       toast.success(
         result === "shared"
           ? "Report ready to share/save"
-          : "Aggregated past 4 months report downloaded successfully"
+          : "Report downloaded successfully"
       );
     } catch (error: any) {
-      toast.error("Failed to generate past 4 months report: " + error.message);
+      toast.error("Failed to generate report: " + error.message);
     } finally {
       setGeneratingReport(false);
     }
@@ -332,190 +331,6 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
 
   /* ---------------- PDF REPORT ---------------- */
 
-  const generateReport = async () => {
-    if (!selectedSubject) {
-      toast.error("Please select a subject first");
-      return;
-    }
-
-    setGeneratingReport(true);
-
-    try {
-      const [year, month] = reportMonth.split("-").map(Number);
-      const startDate = startOfMonth(new Date(year, month - 1));
-      const endDate = endOfMonth(new Date(year, month - 1));
-
-      const { data: attendanceData, error } = await supabase
-        .from("attendance")
-        .select("*")
-        .eq("subject_id", selectedSubject)
-        .gte("attendance_date", format(startDate, "yyyy-MM-dd"))
-        .lte("attendance_date", format(endDate, "yyyy-MM-dd"));
-
-      if (error) throw error;
-
-      const subject = subjects.find(s => s.id === selectedSubject);
-
-      // ---- CALCULATE STUDENT STATS ----
-      const studentStats = enrolledStudents.map(student => {
-        const records = attendanceData?.filter(a => a.student_id === student.id) || [];
-
-        const presentDays = records.filter(
-          r => r.status === "present" || r.status === "late"
-        ).length;
-
-        const absentDays = records.filter(r => r.status === "absent").length;
-        const totalMarkedDays = presentDays + absentDays;
-
-        const percentage =
-          totalMarkedDays > 0
-            ? ((presentDays / totalMarkedDays) * 100).toFixed(1)
-            : "0.0";
-
-        return {
-          rollNumber: student.roll_number,
-          name: student.profiles.full_name,
-          department: student.department,
-          presentDays,
-          absentDays,
-          totalMarkedDays,
-          percentage
-        };
-      });
-
-      // Total working days = max marked days (matches image)
-      const totalWorkingDays = Math.max(
-        ...studentStats.map(s => s.totalMarkedDays),
-        0
-      );
-
-      // ---- PDF GENERATION ----
-      const { jsPDF } = await import("jspdf");
-      const doc = new jsPDF();
-
-      const margin = 10;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const contentWidth = pageWidth - margin * 2;
-      let yPosition = margin;
-
-      // Title
-      doc.setFontSize(13);
-      doc.setFont(undefined, "bold");
-      doc.setTextColor(0, 0, 0);
-      doc.text(
-        `Attendance Report - ${subject?.subject_name} (${subject?.subject_code})`,
-        margin,
-        yPosition
-      );
-      yPosition += 5;
-
-      // Report info
-      doc.setFontSize(8);
-      doc.setFont(undefined, "normal");
-      doc.text(
-        `Month: ${format(startDate, "MMMM yyyy")} | Working Days: ${totalWorkingDays}`,
-        margin,
-        yPosition
-      );
-      yPosition += 6;
-
-      // Table headers
-      const columns = ["Roll", "Name", "Dept", "Present", "Absent", "Total", "Percentage(%)"];
-      const colPercents = [11, 18, 9, 11, 11, 14, 14];
-      const colWidths = colPercents.map(p => (p / 100) * contentWidth);
-      const tableRowHeight = 4.5;
-      const headerRowHeight = 5;
-
-      // Draw header row
-      doc.setFillColor(200, 200, 200);
-      doc.setTextColor(0, 0, 0);
-      let xPos = margin;
-      columns.forEach((col, i) => {
-        doc.rect(xPos, yPosition, colWidths[i], headerRowHeight);
-        doc.setFontSize(6.5);
-        doc.setFont(undefined, "bold");
-        doc.text(col, xPos + colWidths[i] / 2, yPosition + 2.8, { align: "center" });
-        xPos += colWidths[i];
-      });
-      yPosition += headerRowHeight;
-
-      // Draw data rows
-      doc.setFont(undefined, "normal");
-      doc.setTextColor(0, 0, 0);
-      const sortedStats = [...studentStats].sort((a, b) => a.rollNumber.localeCompare(b.rollNumber));
-
-      const drawHeaderOnNewPage = () => {
-        doc.addPage();
-        yPosition = margin + 3;
-        
-        // Redraw header
-        doc.setFillColor(200, 200, 200);
-        xPos = margin;
-        columns.forEach((col, i) => {
-          doc.rect(xPos, yPosition, colWidths[i], headerRowHeight);
-          doc.setFontSize(6.5);
-          doc.setFont(undefined, "bold");
-          doc.text(col, xPos + colWidths[i] / 2, yPosition + 2.8, { align: "center" });
-          xPos += colWidths[i];
-        });
-        yPosition += headerRowHeight;
-        doc.setFont(undefined, "normal");
-      };
-
-      sortedStats.forEach(student => {
-        // Page break check
-        if (yPosition > pageHeight - margin - 25) {
-          drawHeaderOnNewPage();
-        }
-
-        doc.setFillColor(255, 255, 255);
-        doc.setTextColor(0, 0, 0);
-        const rowData = [
-          student.rollNumber,
-          student.name.substring(0, 20),
-          student.department.substring(0, 3),
-          student.presentDays.toString(),
-          student.absentDays.toString(),
-          student.totalMarkedDays.toString(),
-          student.percentage
-        ];
-
-        xPos = margin;
-        rowData.forEach((cell, i) => {
-          // Draw border
-          doc.setDrawColor(0);
-          doc.setLineWidth(0.2);
-          doc.rect(xPos, yPosition, colWidths[i], tableRowHeight);
-          
-          // Draw text
-          doc.setFontSize(6);
-          const cellCenterX = xPos + colWidths[i] / 2;
-          const cellCenterY = yPosition + tableRowHeight / 2 + 0.8;
-          
-          // Left align for roll, name, dept; center for others
-          const align = i <= 2 ? "left" : "center";
-          const textX = align === "left" ? xPos + 1 : cellCenterX;
-          
-          doc.text(cell, textX, cellCenterY, { align, maxWidth: colWidths[i] - 2 });
-          xPos += colWidths[i];
-        });
-        yPosition += tableRowHeight;
-      });
-
-      const result = await savePdfDocument(
-        doc,
-        `attendance_${subject?.subject_code}_${reportMonth}.pdf`
-      );
-      toast.success(
-        result === "shared" ? "Report ready to share/save" : "Report downloaded successfully"
-      );
-    } catch (error: any) {
-      toast.error("Failed to generate report: " + error.message);
-    } finally {
-      setGeneratingReport(false);
-    }
-  };
 
   /* ---------------- UI ---------------- */
 
@@ -607,16 +422,21 @@ export const TeacherAttendance = ({ userId }: TeacherAttendanceProps) => {
         <CardHeader>
           <CardTitle className="flex gap-2"><Download /> Generate Report</CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-4">
-          <Input type="month" value={reportMonth} onChange={e => setReportMonth(e.target.value)} />
-          <Button onClick={generateReport} disabled={generatingReport}>
-            {generatingReport && <Loader2 className="animate-spin mr-2" />}
-            Download PDF
-          </Button>
-          <Button onClick={generatePastFourMonthsReport} disabled={generatingReport} variant="outline">
-            {generatingReport && <Loader2 className="animate-spin mr-2" />}
-            Download Past 4 Months
-          </Button>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+              <Label>From Date</Label>
+              <Input type="date" value={reportFromDate} onChange={e => setReportFromDate(e.target.value)} />
+            </div>
+            <div>
+              <Label>To Date</Label>
+              <Input type="date" value={reportToDate} onChange={e => setReportToDate(e.target.value)} />
+            </div>
+            <Button onClick={generateDateRangeReport} disabled={generatingReport}>
+              {generatingReport && <Loader2 className="animate-spin mr-2" />}
+              Download PDF
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
