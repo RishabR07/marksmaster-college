@@ -776,9 +776,36 @@ const TeacherDashboard = () => {
 
                   {selectedSubject && (
                     <div className="mt-6">
-                      <h3 className="text-lg font-semibold mb-4">
-                        Enrolled Students ({enrolledStudents.length})
-                      </h3>
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold">
+                          Enrolled Students ({enrolledStudents.length})
+                        </h3>
+                        {enrolledStudents.length > 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const subject = subjects.find(s => s.id === selectedSubject);
+                              const headers = "roll_number,full_name,department";
+                              const rows = enrolledStudents.map(s => 
+                                `${s.roll_number},${s.profiles.full_name},${s.department || ''}`
+                              ).join('\n');
+                              const csv = `${headers}\n${rows}`;
+                              const blob = new Blob([csv], { type: 'text/csv' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `enrolled_students_${subject?.subject_code || 'subject'}.csv`;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                              toast.success("Enrolled students exported!");
+                            }}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download CSV
+                          </Button>
+                        )}
+                      </div>
                       <div className="border rounded-lg divide-y max-h-96 overflow-y-auto">
                         {enrolledStudents.length === 0 ? (
                           <p className="text-muted-foreground text-center py-8">
