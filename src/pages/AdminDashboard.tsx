@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Upload, Trash2, KeyRound, Trash, Calendar, Users, CalendarDays, Megaphone, Menu, X } from "lucide-react";
+import { Loader2, Upload, Trash2, KeyRound, Trash, Calendar, Users, CalendarDays, Megaphone, Menu, X, Download } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -720,6 +720,24 @@ const AdminDashboard = () => {
                       <strong>Note:</strong> roll_number is required for students. department and semester are optional.
                     </AlertDescription>
                   </Alert>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const template = "email,full_name,role,roll_number,department,semester\njohn@example.com,John Doe,student,4NM21CS001,Computer Science,5\njane@example.com,Jane Smith,teacher,,,";
+                      const blob = new Blob([template], { type: 'text/csv' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'users_import_template.csv';
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      toast.success("Template downloaded!");
+                    }}
+                    className="w-full"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download CSV Template
+                  </Button>
                   <div className="space-y-2">
                     <Label htmlFor="csv-file">Select CSV File</Label>
                     <Input

@@ -24,7 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import {
   LogOut, BookOpen, Users, FileText, Upload, Loader2,
-  Calendar, CalendarDays, Megaphone, Menu, X,
+  Calendar, CalendarDays, Megaphone, Menu, X, Download,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TeacherAttendance } from "@/components/attendance/TeacherAttendance";
@@ -978,6 +978,24 @@ const TeacherDashboard = () => {
                       <strong>Note:</strong> Only enrolled students can receive marks. assessment_date is optional (defaults to today).
                     </AlertDescription>
                   </Alert>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const template = "roll_number,marks,max_marks,assessment_type,assessment_date\n4NM21CS001,85,100,Mid-term,2024-11-10\n4NM21CS002,78,100,Mid-term,2024-11-10";
+                      const blob = new Blob([template], { type: 'text/csv' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'marks_import_template.csv';
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      toast.success("Template downloaded!");
+                    }}
+                    className="w-full"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download CSV Template
+                  </Button>
                   {!selectedSubject && (
                     <Alert>
                       <AlertDescription className="text-destructive">
@@ -1066,6 +1084,24 @@ const TeacherDashboard = () => {
                       <strong>Note:</strong> department and semester are optional. Each student will get a temporary password that will be displayed after import.
                     </AlertDescription>
                   </Alert>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const template = "full_name,email,roll_number,department,semester\nJohn Doe,john@example.com,4NM21CS001,Computer Science,5\nJane Smith,jane@example.com,4NM21CS002,Computer Science,5";
+                      const blob = new Blob([template], { type: 'text/csv' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'students_import_template.csv';
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      toast.success("Template downloaded!");
+                    }}
+                    className="w-full"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download CSV Template
+                  </Button>
                   <div className="space-y-2">
                     <Label htmlFor="student-csv-file">Select CSV File</Label>
                     <Input
