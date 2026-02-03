@@ -24,7 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import {
   LogOut, BookOpen, Users, FileText, Upload, Loader2,
-  Calendar, CalendarDays, Megaphone, ClipboardList, Menu, X,
+  Calendar, CalendarDays, Megaphone, Menu, X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TeacherAttendance } from "@/components/attendance/TeacherAttendance";
@@ -531,11 +531,6 @@ const TeacherDashboard = () => {
               <FileText className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">Marks</span>
               <span className="sm:hidden">Marks</span>
-            </TabsTrigger>
-            <TabsTrigger value="ia-marks" onClick={() => navigate("/teacher/ia-marks")} className="flex-1 min-w-[70px] text-xs md:text-sm">
-              <ClipboardList className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-              <span className="hidden sm:inline">IA Marks</span>
-              <span className="sm:hidden">IA</span>
             </TabsTrigger>
             <TabsTrigger value="attendance" className="flex-1 min-w-[70px] text-xs md:text-sm">
               <Calendar className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
