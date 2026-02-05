@@ -1,108 +1,105 @@
 /**
- * API Service Layer for Express Backend
- * Handles all HTTP requests to the Express/MongoDB backend
+ * API Service Layer for Supabase Backend
+ * Handles all database operations through Supabase client
  */
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
-// =====================
-// Helper Functions
-// =====================
-
-const getAuthToken = (): string | null => {
-  return localStorage.getItem("authToken");
-};
-
-const setAuthToken = (token: string) => {
-  localStorage.setItem("authToken", token);
-};
-
-const clearAuthToken = () => {
-  localStorage.removeItem("authToken");
-};
-
-const getHeaders = (includeAuth = true): Record<string, string> => {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-
-  if (includeAuth) {
-    const token = getAuthToken();
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-  }
-
-  return headers;
-};
-
-const handleResponse = async (response: Response) => {
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.msg || data.error || "An error occurred");
-  }
-
-  return data;
-};
+import { supabase } from "@/integrations/supabase/client";
 
 // =====================
 // Auth API
 // =====================
 
 export const authAPI = {
-  register: async (name: string, email: string, password: string, role: string = "student") => {
-    const response = await fetch(`${API_URL}/api/auth/register`, {
-      method: "POST",
-      headers: getHeaders(false),
-      body: JSON.stringify({ name, email, password, role }),
-    });
-    const data = await handleResponse(response);
-    if (data.token) {
-      setAuthToken(data.token);
+  register: async (email: string, password: string, fullName: string, role: "admin" | "teacher" | "student" = "student") => {
+    try {
+      // Sign up user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error("Failed to create user");
+
+      // Create user role
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: authData.user.id,
+          role,
+        });
+
+      if (roleError) throw roleError;
+
+      return { user: authData.user, role };
+    } catch (error: any) {
+      throw new Error(error.message || "Registration failed");
     }
-    return data;
   },
 
   login: async (email: string, password: string) => {
-    const response = await fetch(`${API_URL}/api/auth/login`, {
-      method: "POST",
-      headers: getHeaders(false),
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await handleResponse(response);
-    if (data.token) {
-      setAuthToken(data.token);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+      if (!data.user) throw new Error("Login failed");
+
+      // Get user role
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.user.id)
+        .single();
+
+      return { 
+        user: data.user, 
+        role: roleData?.role || "student",
+        session: data.session 
+      };
+    } catch (error: any) {
+      throw new Error(error.message || "Login failed");
     }
-    return data;
   },
 
-  logout: () => {
-    clearAuthToken();
+  logout: async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
   },
 
   getCurrentUser: async () => {
-    const token = getAuthToken();
-    if (!token) return null;
-
-    // Decode JWT to get user info (without verifying signature)
     try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      return payload.user;
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      return data?.user || null;
     } catch (error) {
-      clearAuthToken();
       return null;
     }
   },
 
-  getUserRole: async (userId: string): Promise<string | null> => {
+  getSession: async () => {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    return data?.session || null;
+  },
+
+  getUserRole: async (userId: string) => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/user/${userId}`, {
-        method: "GET",
-        headers: getHeaders(true),
-      });
-      const data = await handleResponse(response);
-      return data.role || null;
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .single();
+
+      if (error) throw error;
+      return data?.role || null;
     } catch (error) {
       console.error("Failed to fetch user role:", error);
       return null;
@@ -110,43 +107,51 @@ export const authAPI = {
   },
 
   sendOTP: async (email: string) => {
-    const response = await fetch(`${API_URL}/api/auth/send-otp`, {
-      method: "POST",
-      headers: getHeaders(false),
-      body: JSON.stringify({ email }),
-    });
-    return await handleResponse(response);
-  },
-
-  verifyOTP: async (email: string, otp: string) => {
-    const response = await fetch(`${API_URL}/api/auth/verify-otp`, {
-      method: "POST",
-      headers: getHeaders(false),
-      body: JSON.stringify({ email, otp }),
-    });
-    const data = await handleResponse(response);
-    if (data.token) {
-      setAuthToken(data.token);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+      });
+      if (error) throw error;
+      return { success: true };
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to send OTP");
     }
-    return data;
   },
 
-  resetPassword: async (email: string, newPassword: string, token?: string) => {
-    const response = await fetch(`${API_URL}/api/auth/reset-password`, {
-      method: "POST",
-      headers: getHeaders(!!token),
-      body: JSON.stringify({ email, newPassword, token }),
-    });
-    return await handleResponse(response);
+  verifyOTP: async (email: string, token: string) => {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: "email",
+      });
+      if (error) throw error;
+      return { session: data.session, user: data.user };
+    } catch (error: any) {
+      throw new Error(error.message || "OTP verification failed");
+    }
   },
 
-  changePassword: async (userId: string, currentPassword: string, newPassword: string) => {
-    const response = await fetch(`${API_URL}/api/auth/change-password`, {
-      method: "POST",
-      headers: getHeaders(true),
-      body: JSON.stringify({ userId, currentPassword, newPassword }),
-    });
-    return await handleResponse(response);
+  resetPassword: async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+      return { success: true };
+    } catch (error: any) {
+      throw new Error(error.message || "Password reset failed");
+    }
+  },
+
+  changePassword: async (newPassword: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      if (error) throw error;
+      return { success: true };
+    } catch (error: any) {
+      throw new Error(error.message || "Password change failed");
+    }
   },
 };
 
@@ -155,46 +160,59 @@ export const authAPI = {
 // =====================
 
 export const studentsAPI = {
-  create: async (name: string, roll: string, cls: string, email: string) => {
-    const response = await fetch(`${API_URL}/api/students`, {
-      method: "POST",
-      headers: getHeaders(true),
-      body: JSON.stringify({ name, roll, class: cls, email }),
-    });
-    return await handleResponse(response);
+  create: async (data: { student_user_id: string; roll_number: string; department?: string; semester?: number }) => {
+    const { error, data: result } = await supabase
+      .from("students")
+      .insert([data])
+      .select();
+    if (error) throw error;
+    return result?.[0];
   },
 
   getAll: async () => {
-    const response = await fetch(`${API_URL}/api/students`, {
-      method: "GET",
-      headers: getHeaders(true),
-    });
-    return await handleResponse(response);
+    const { data, error } = await supabase
+      .from("students")
+      .select("*");
+    if (error) throw error;
+    return data || [];
   },
 
   getById: async (id: string) => {
-    const response = await fetch(`${API_URL}/api/students/${id}`, {
-      method: "GET",
-      headers: getHeaders(true),
-    });
-    return await handleResponse(response);
+    const { data, error } = await supabase
+      .from("students")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  getByUserId: async (userId: string) => {
+    const { data, error } = await supabase
+      .from("students")
+      .select("*")
+      .eq("student_user_id", userId)
+      .single();
+    if (error) throw error;
+    return data;
   },
 
   update: async (id: string, data: Record<string, any>) => {
-    const response = await fetch(`${API_URL}/api/students/${id}`, {
-      method: "PUT",
-      headers: getHeaders(true),
-      body: JSON.stringify(data),
-    });
-    return await handleResponse(response);
+    const { error, data: result } = await supabase
+      .from("students")
+      .update(data)
+      .eq("id", id)
+      .select();
+    if (error) throw error;
+    return result?.[0];
   },
 
   delete: async (id: string) => {
-    const response = await fetch(`${API_URL}/api/students/${id}`, {
-      method: "DELETE",
-      headers: getHeaders(true),
-    });
-    return await handleResponse(response);
+    const { error } = await supabase
+      .from("students")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
   },
 };
 
@@ -203,42 +221,65 @@ export const studentsAPI = {
 // =====================
 
 export const attendanceAPI = {
-  create: async (studentId: string, date: string, status: string, subject?: string) => {
-    const response = await fetch(`${API_URL}/api/attendance`, {
-      method: "POST",
-      headers: getHeaders(true),
-      body: JSON.stringify({ student: studentId, date, status, subject }),
-    });
-    return await handleResponse(response);
+  create: async (data: { student_id: string; subject_id: string; status: string; marked_by: string; remarks?: string }) => {
+    const { error, data: result } = await supabase
+      .from("attendance")
+      .insert([data])
+      .select();
+    if (error) throw error;
+    return result?.[0];
   },
 
-  getAll: async (studentId?: string) => {
-    let url = `${API_URL}/api/attendance`;
-    if (studentId) {
-      url += `?student=${studentId}`;
+  getAll: async (filters?: Record<string, any>) => {
+    let query = supabase.from("attendance").select("*");
+    
+    if (filters?.student_id) {
+      query = query.eq("student_id", filters.student_id);
     }
-    const response = await fetch(url, {
-      method: "GET",
-      headers: getHeaders(true),
-    });
-    return await handleResponse(response);
+    if (filters?.subject_id) {
+      query = query.eq("subject_id", filters.subject_id);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  },
+
+  getByStudentAndSubject: async (studentId: string, subjectId: string) => {
+    const { data, error } = await supabase
+      .from("attendance")
+      .select("*")
+      .eq("student_id", studentId)
+      .eq("subject_id", subjectId);
+    if (error) throw error;
+    return data || [];
   },
 
   update: async (id: string, data: Record<string, any>) => {
-    const response = await fetch(`${API_URL}/api/attendance/${id}`, {
-      method: "PUT",
-      headers: getHeaders(true),
-      body: JSON.stringify(data),
-    });
-    return await handleResponse(response);
+    const { error, data: result } = await supabase
+      .from("attendance")
+      .update(data)
+      .eq("id", id)
+      .select();
+    if (error) throw error;
+    return result?.[0];
   },
 
   delete: async (id: string) => {
-    const response = await fetch(`${API_URL}/api/attendance/${id}`, {
-      method: "DELETE",
-      headers: getHeaders(true),
-    });
-    return await handleResponse(response);
+    const { error } = await supabase
+      .from("attendance")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
+  },
+
+  bulkCreate: async (records: any[]) => {
+    const { error, data } = await supabase
+      .from("attendance")
+      .insert(records)
+      .select();
+    if (error) throw error;
+    return data || [];
   },
 };
 
@@ -247,216 +288,429 @@ export const attendanceAPI = {
 // =====================
 
 export const eventsAPI = {
-  create: async (data: Record<string, any>) => {
-    const response = await fetch(`${API_URL}/api/events`, {
-      method: "POST",
-      headers: getHeaders(true),
-      body: JSON.stringify(data),
-    });
-    return await handleResponse(response);
+  create: async (data: { title: string; description?: string; event_date: string; event_time?: string; location?: string; image_url?: string; branch?: string; year_of_studying?: number; created_by: string }) => {
+    const { error, data: result } = await supabase
+      .from("events")
+      .insert([data])
+      .select();
+    if (error) throw error;
+    return result?.[0];
   },
 
   getAll: async () => {
-    const response = await fetch(`${API_URL}/api/events`, {
-      method: "GET",
-      headers: getHeaders(false),
-    });
-    return await handleResponse(response);
+    const { data, error } = await supabase
+      .from("events")
+      .select("*")
+      .order("event_date", { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  getById: async (id: string) => {
+    const { data, error } = await supabase
+      .from("events")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (error) throw error;
+    return data;
   },
 
   update: async (id: string, data: Record<string, any>) => {
-    const response = await fetch(`${API_URL}/api/events/${id}`, {
-      method: "PUT",
-      headers: getHeaders(true),
-      body: JSON.stringify(data),
-    });
-    return await handleResponse(response);
+    const { error, data: result } = await supabase
+      .from("events")
+      .update(data)
+      .eq("id", id)
+      .select();
+    if (error) throw error;
+    return result?.[0];
   },
 
   delete: async (id: string) => {
-    const response = await fetch(`${API_URL}/api/events/${id}`, {
-      method: "DELETE",
-      headers: getHeaders(true),
-    });
-    return await handleResponse(response);
+    const { error } = await supabase
+      .from("events")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
   },
 };
 
 // =====================
-// Subjects API (if needed in backend)
+// Subjects API
 // =====================
 
 export const subjectsAPI = {
-  create: async (data: Record<string, any>) => {
-    const response = await fetch(`${API_URL}/api/subjects`, {
-      method: "POST",
-      headers: getHeaders(true),
-      body: JSON.stringify(data),
-    });
-    return await handleResponse(response);
+  create: async (data: { subject_name: string; subject_code: string; teacher_id: string }) => {
+    const { error, data: result } = await supabase
+      .from("subjects")
+      .insert([data])
+      .select();
+    if (error) throw error;
+    return result?.[0];
   },
 
-  getAll: async (teacherId?: string) => {
-    let url = `${API_URL}/api/subjects`;
-    if (teacherId) {
-      url += `?teacher=${teacherId}`;
+  getAll: async (filters?: Record<string, any>) => {
+    let query = supabase.from("subjects").select("*");
+    
+    if (filters?.teacher_id) {
+      query = query.eq("teacher_id", filters.teacher_id);
     }
-    const response = await fetch(url, {
-      method: "GET",
-      headers: getHeaders(true),
-    });
-    return await handleResponse(response);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  },
+
+  getById: async (id: string) => {
+    const { data, error } = await supabase
+      .from("subjects")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (error) throw error;
+    return data;
   },
 
   update: async (id: string, data: Record<string, any>) => {
-    const response = await fetch(`${API_URL}/api/subjects/${id}`, {
-      method: "PUT",
-      headers: getHeaders(true),
-      body: JSON.stringify(data),
-    });
-    return await handleResponse(response);
+    const { error, data: result } = await supabase
+      .from("subjects")
+      .update(data)
+      .eq("id", id)
+      .select();
+    if (error) throw error;
+    return result?.[0];
   },
 
   delete: async (id: string) => {
-    const response = await fetch(`${API_URL}/api/subjects/${id}`, {
-      method: "DELETE",
-      headers: getHeaders(true),
-    });
-    return await handleResponse(response);
+    const { error } = await supabase
+      .from("subjects")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
   },
 };
 
 // =====================
-// Marks API (if needed in backend)
+// Marks API
 // =====================
 
 export const marksAPI = {
-  create: async (data: Record<string, any>) => {
-    const response = await fetch(`${API_URL}/api/marks`, {
-      method: "POST",
-      headers: getHeaders(true),
-      body: JSON.stringify(data),
-    });
-    return await handleResponse(response);
+  create: async (data: { student_id: string; subject_id: string; marks: number; max_marks?: number; assessment_type: string; assessment_date?: string }) => {
+    const { error, data: result } = await supabase
+      .from("marks")
+      .insert([data])
+      .select();
+    if (error) throw error;
+    return result?.[0];
   },
 
   getAll: async (filters?: Record<string, any>) => {
-    let url = `${API_URL}/api/marks`;
-    if (filters) {
-      const params = new URLSearchParams(filters);
-      url += `?${params.toString()}`;
+    let query = supabase.from("marks").select("*");
+    
+    if (filters?.student_id) {
+      query = query.eq("student_id", filters.student_id);
     }
-    const response = await fetch(url, {
-      method: "GET",
-      headers: getHeaders(true),
-    });
-    return await handleResponse(response);
+    if (filters?.subject_id) {
+      query = query.eq("subject_id", filters.subject_id);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  },
+
+  getByStudentAndSubject: async (studentId: string, subjectId: string) => {
+    const { data, error } = await supabase
+      .from("marks")
+      .select("*")
+      .eq("student_id", studentId)
+      .eq("subject_id", subjectId);
+    if (error) throw error;
+    return data || [];
   },
 
   update: async (id: string, data: Record<string, any>) => {
-    const response = await fetch(`${API_URL}/api/marks/${id}`, {
-      method: "PUT",
-      headers: getHeaders(true),
-      body: JSON.stringify(data),
-    });
-    return await handleResponse(response);
+    const { error, data: result } = await supabase
+      .from("marks")
+      .update(data)
+      .eq("id", id)
+      .select();
+    if (error) throw error;
+    return result?.[0];
   },
 
-  upsert: async (data: Record<string, any>) => {
-    // Upsert functionality - will insert or update
-    const response = await fetch(`${API_URL}/api/marks/upsert`, {
-      method: "POST",
-      headers: getHeaders(true),
-      body: JSON.stringify(data),
-    });
-    return await handleResponse(response);
-  },
-};
-
-// =====================
-// Enrollments API (if needed in backend)
-// =====================
-
-export const enrollmentsAPI = {
-  create: async (data: Record<string, any>) => {
-    const response = await fetch(`${API_URL}/api/enrollments`, {
-      method: "POST",
-      headers: getHeaders(true),
-      body: JSON.stringify(data),
-    });
-    return await handleResponse(response);
-  },
-
-  getAll: async (filters?: Record<string, any>) => {
-    let url = `${API_URL}/api/enrollments`;
-    if (filters) {
-      const params = new URLSearchParams(filters);
-      url += `?${params.toString()}`;
-    }
-    const response = await fetch(url, {
-      method: "GET",
-      headers: getHeaders(true),
-    });
-    return await handleResponse(response);
-  },
-
-  update: async (id: string, data: Record<string, any>) => {
-    const response = await fetch(`${API_URL}/api/enrollments/${id}`, {
-      method: "PUT",
-      headers: getHeaders(true),
-      body: JSON.stringify(data),
-    });
-    return await handleResponse(response);
+  bulkUpsert: async (records: any[]) => {
+    const { error, data } = await supabase
+      .from("marks")
+      .upsert(records, { onConflict: "student_id,subject_id" })
+      .select();
+    if (error) throw error;
+    return data || [];
   },
 
   delete: async (id: string) => {
-    const response = await fetch(`${API_URL}/api/enrollments/${id}`, {
-      method: "DELETE",
-      headers: getHeaders(true),
-    });
-    return await handleResponse(response);
+    const { error } = await supabase
+      .from("marks")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
   },
 };
 
 // =====================
-// Bulk Operations API
+// IA Marks API
 // =====================
 
-export const bulkAPI = {
-  importMarks: async (marks: Record<string, any>) => {
-    const response = await fetch(`${API_URL}/api/bulk/import-marks`, {
-      method: "POST",
-      headers: getHeaders(true),
-      body: JSON.stringify(marks),
-    });
-    return await handleResponse(response);
+export const iaMarksAPI = {
+  create: async (data: any) => {
+    const { error, data: result } = await supabase
+      .from("ia_marks")
+      .insert([data])
+      .select();
+    if (error) throw error;
+    return result?.[0];
   },
 
-  importStudents: async (students: Record<string, any>) => {
-    const response = await fetch(`${API_URL}/api/bulk/import-students`, {
-      method: "POST",
-      headers: getHeaders(true),
-      body: JSON.stringify(students),
-    });
-    return await handleResponse(response);
+  getByStudentAndSubject: async (studentId: string, subjectId: string) => {
+    const { data, error } = await supabase
+      .from("ia_marks")
+      .select("*")
+      .eq("student_id", studentId)
+      .eq("subject_id", subjectId)
+      .single();
+    if (error) throw error;
+    return data;
   },
 
-  sendMarksNotification: async (data: Record<string, any>) => {
-    const response = await fetch(`${API_URL}/api/bulk/send-marks-notification`, {
-      method: "POST",
-      headers: getHeaders(true),
-      body: JSON.stringify(data),
-    });
-    return await handleResponse(response);
+  update: async (id: string, data: Record<string, any>) => {
+    const { error, data: result } = await supabase
+      .from("ia_marks")
+      .update(data)
+      .eq("id", id)
+      .select();
+    if (error) throw error;
+    return result?.[0];
   },
 
-  sendEnrollmentNotification: async (data: Record<string, any>) => {
-    const response = await fetch(`${API_URL}/api/bulk/send-enrollment-notification`, {
-      method: "POST",
-      headers: getHeaders(true),
-      body: JSON.stringify(data),
-    });
-    return await handleResponse(response);
+  getAll: async (filters?: Record<string, any>) => {
+    let query = supabase.from("ia_marks").select("*");
+    
+    if (filters?.student_id) {
+      query = query.eq("student_id", filters.student_id);
+    }
+    if (filters?.subject_id) {
+      query = query.eq("subject_id", filters.subject_id);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  },
+
+  delete: async (id: string) => {
+    const { error } = await supabase
+      .from("ia_marks")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
+  },
+};
+
+// =====================
+// Enrollments API
+// =====================
+
+export const enrollmentsAPI = {
+  create: async (data: { student_id: string; subject_id: string }) => {
+    const { error, data: result } = await supabase
+      .from("enrollments")
+      .insert([data])
+      .select();
+    if (error) throw error;
+    return result?.[0];
+  },
+
+  getAll: async (filters?: Record<string, any>) => {
+    let query = supabase
+      .from("enrollments")
+      .select("*, student:students(*), subject:subjects(*)");
+    
+    if (filters?.student_id) {
+      query = query.eq("student_id", filters.student_id);
+    }
+    if (filters?.subject_id) {
+      query = query.eq("subject_id", filters.subject_id);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  },
+
+  getBySubject: async (subjectId: string) => {
+    const { data, error } = await supabase
+      .from("enrollments")
+      .select("*, student:students(*)")
+      .eq("subject_id", subjectId);
+    if (error) throw error;
+    return data || [];
+  },
+
+  delete: async (id: string) => {
+    const { error } = await supabase
+      .from("enrollments")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
+  },
+
+  bulkCreate: async (records: any[]) => {
+    const { error, data } = await supabase
+      .from("enrollments")
+      .insert(records)
+      .select();
+    if (error) throw error;
+    return data || [];
+  },
+};
+
+// =====================
+// Announcements API
+// =====================
+
+export const announcementsAPI = {
+  create: async (data: { title: string; content: string; priority?: string; created_by: string }) => {
+    const { error, data: result } = await supabase
+      .from("announcements")
+      .insert([data])
+      .select();
+    if (error) throw error;
+    return result?.[0];
+  },
+
+  getAll: async () => {
+    const { data, error } = await supabase
+      .from("announcements")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  update: async (id: string, data: Record<string, any>) => {
+    const { error, data: result } = await supabase
+      .from("announcements")
+      .update(data)
+      .eq("id", id)
+      .select();
+    if (error) throw error;
+    return result?.[0];
+  },
+
+  delete: async (id: string) => {
+    const { error } = await supabase
+      .from("announcements")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
+  },
+};
+
+// =====================
+// Storage API
+// =====================
+
+export const storageAPI = {
+  uploadEventImage: async (file: File, fileName: string) => {
+    const { error, data } = await supabase.storage
+      .from("event-images")
+      .upload(`${fileName}`, file);
+    
+    if (error) throw error;
+    
+    const { data: urlData } = supabase.storage
+      .from("event-images")
+      .getPublicUrl(data.path);
+    
+    return urlData.publicUrl;
+  },
+
+  deleteEventImage: async (filePath: string) => {
+    const { error } = await supabase.storage
+      .from("event-images")
+      .remove([filePath]);
+    
+    if (error) throw error;
+  },
+};
+
+// =====================
+// Profiles API
+// =====================
+
+export const profilesAPI = {
+  get: async (userId: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  update: async (userId: string, data: Record<string, any>) => {
+    const { error, data: result } = await supabase
+      .from("profiles")
+      .update(data)
+      .eq("id", userId)
+      .select();
+    if (error) throw error;
+    return result?.[0];
+  },
+
+  getAll: async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*");
+    if (error) throw error;
+    return data || [];
+  },
+};
+
+// =====================
+// User Roles API
+// =====================
+
+export const userRolesAPI = {
+  getRole: async (userId: string) => {
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .single();
+    if (error) throw error;
+    return data?.role || null;
+  },
+
+  setRole: async (userId: string, role: string) => {
+    const { error, data } = await supabase
+      .from("user_roles")
+      .upsert(
+        { user_id: userId, role },
+        { onConflict: "user_id" }
+      )
+      .select();
+    if (error) throw error;
+    return data?.[0];
+  },
+
+  getAllRoles: async () => {
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("*");
+    if (error) throw error;
+    return data || [];
   },
 };
 
@@ -464,24 +718,13 @@ export const bulkAPI = {
 // Utility Functions
 // =====================
 
-export const isAuthenticated = (): boolean => {
-  return !!getAuthToken();
+export const isAuthenticated = async (): Promise<boolean> => {
+  const session = await authAPI.getSession();
+  return !!session;
 };
 
-export const getTokenInfo = () => {
-  const token = getAuthToken();
-  if (!token) return null;
-
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return {
-      userId: payload.user?.id,
-      expiresAt: new Date(payload.exp * 1000),
-      user: payload.user,
-    };
-  } catch (error) {
-    return null;
-  }
+export const getCurrentSession = async () => {
+  return await authAPI.getSession();
 };
 
 export default {
@@ -491,11 +734,12 @@ export default {
   eventsAPI,
   subjectsAPI,
   marksAPI,
+  iaMarksAPI,
   enrollmentsAPI,
-  bulkAPI,
+  announcementsAPI,
+  storageAPI,
+  profilesAPI,
+  userRolesAPI,
   isAuthenticated,
-  getTokenInfo,
-  getAuthToken,
-  setAuthToken,
-  clearAuthToken,
+  getCurrentSession,
 };

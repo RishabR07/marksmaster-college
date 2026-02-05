@@ -1,9 +1,12 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { authAPI } from "@/services/api";
 
 interface User {
   id: string;
+  email?: string;
+  user_metadata?: Record<string, any>;
   [key: string]: any;
 }
 
@@ -33,13 +36,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // Get current user from Supabase
         const currentUser = await authAPI.getCurrentUser();
         if (currentUser) {
           setUser(currentUser);
-          // For now, we'll use the role from the JWT or default to 'student'
-          // The backend can store the role in the JWT payload
-          const role = currentUser.role || "student";
-          setUserRole(role as "admin" | "teacher" | "student");
+          
+          // Get user role from database
+          const role = await authAPI.getUserRole(currentUser.id);
+          setUserRole(role as "admin" | "teacher" | "student" || "student");
         }
       } catch (error) {
         console.error("Failed to initialize auth:", error);
@@ -49,13 +53,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     initializeAuth();
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          setUser(session.user);
+          const role = await authAPI.getUserRole(session.user.id);
+          setUserRole(role as "admin" | "teacher" | "student" || "student");
+        } else {
+          setUser(null);
+          setUserRole(null);
+        }
+      }
+    );
+
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
-    authAPI.logout();
-    setUser(null);
-    setUserRole(null);
-    navigate("/");
+    try {
+      await authAPI.logout();
+      setUser(null);
+      setUserRole(null);
+      navigate("/");
+    } catch (error) {
+      console.error("Failed to sign out:", error);
+    }
   };
 
   return (

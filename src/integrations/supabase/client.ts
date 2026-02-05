@@ -1,19 +1,10 @@
-// Supabase client stub - using Express + MongoDB backend instead
-// This file exists only for backwards compatibility with existing components
+import { createClient } from "@supabase/supabase-js";
 
-export const supabase = {
-  // Stub methods to prevent runtime errors from old code
-  from: () => ({
-    select: async () => ({ data: null, error: new Error('Using API service instead') }),
-    insert: async () => ({ data: null, error: new Error('Using API service instead') }),
-    update: async () => ({ data: null, error: new Error('Using API service instead') }),
-    delete: async () => ({ data: null, error: new Error('Using API service instead') }),
-  }),
-  auth: {
-    getSession: async () => ({ data: { session: null }, error: null }),
-    signOut: async () => ({ error: null }),
-  },
-  functions: {
-    invoke: async () => ({ data: null, error: new Error('Using API service instead') }),
-  },
-};
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error("Missing Supabase environment variables");
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
