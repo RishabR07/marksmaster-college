@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { authAPI } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,12 +64,7 @@ const Auth = () => {
     setForgotLoading(true);
 
     try {
-      const response = await supabase.functions.invoke("send-otp", {
-        body: { email: forgotEmail },
-      });
-
-      if (response.error) throw response.error;
-
+      await authAPI.sendOTP(forgotEmail);
       toast.success("If the email exists, you'll receive an OTP shortly.");
       setForgotStep("otp");
       setOtpTimeRemaining(OTP_EXPIRY_SECONDS);
@@ -115,19 +110,14 @@ const Auth = () => {
     setForgotLoading(true);
 
     try {
-      const response = await supabase.functions.invoke("verify-otp", {
-        body: { 
-          email: forgotEmail, 
-          otp: otpValue,
-          newPassword: newPassword 
-        },
-      });
-
-      if (response.error) throw response.error;
-
-      if (response.data?.error) {
-        throw new Error(response.data.error);
+      const result = await authAPI.verifyOTP(forgotEmail, otpValue);
+      
+      if (result.error) {
+        throw new Error(result.error);
       }
+
+      // If OTP verified, reset password
+      await authAPI.resetPassword(forgotEmail, newPassword);
 
       toast.success("Password reset successfully! Please login with your new password.");
       resetForgotPasswordState();
@@ -154,41 +144,23 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
-      });
+      const result = await authAPI.login(loginEmail, loginPassword);
 
-      if (error) throw error;
+      // Decode JWT to get user role
+      const userInfo = await authAPI.getCurrentUser();
+      const role = userInfo?.role || "student";
 
-      if (data.user) {
-        const { data: roleData, error: roleError } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", data.user.id)
-          .maybeSingle();
-
-        if (roleError) {
-          console.error("Error fetching role:", roleError);
-          toast.error("Could not determine user role");
-          return;
-        }
-
-        if (!roleData) {
-          toast.error("No role assigned to this user. Please contact support.");
-          return;
-        }
-
-        if (roleData.role === "admin") {
-          navigate("/admin");
-        } else if (roleData.role === "teacher") {
-          navigate("/teacher");
-        } else {
-          navigate("/student");
-        }
+      if (role === "admin") {
+        navigate("/admin");
+      } else if (role === "teacher") {
+        navigate("/teacher");
+      } else {
+        navigate("/student");
       }
+      
+      toast.success("Login successful!");
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || "Invalid credentials");
     } finally {
       setLoading(false);
     }

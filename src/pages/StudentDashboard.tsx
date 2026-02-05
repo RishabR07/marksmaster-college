@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { marksAPI, studentsAPI } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,84 +48,62 @@ const StudentDashboard = () => {
   }, [user]);
 
   const fetchStudentInfo = async () => {
-    const { data, error } = await supabase
-      .from("students")
-      .select("id, roll_number, department, student_user_id")
-      .eq("student_user_id", user?.id)
-      .maybeSingle();
-
-    if (error) {
-      toast.error("Failed to fetch student information");
-      return;
-    }
-
-    if (data) {
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", data.student_user_id)
-        .single();
-
-      setStudentInfo({
-        ...data,
-        profiles: {
-          full_name: profileData?.full_name || "Unknown"
+    try {
+      const students = await studentsAPI.getAll();
+      
+      if (students && Array.isArray(students)) {
+        const studentData = students.find((s: any) => s.student_user_id === user?.id);
+        
+        if (studentData) {
+          setStudentInfo({
+            ...studentData,
+            profiles: {
+              full_name: studentData.full_name || "Unknown"
+            }
+          });
         }
-      });
+      }
+    } catch (error) {
+      console.error("Failed to fetch student information:", error);
+      toast.error("Failed to fetch student information");
     }
   };
 
   const fetchMarks = async () => {
-    const { data: studentData } = await supabase
-      .from("students")
-      .select("id")
-      .eq("student_user_id", user?.id)
-      .maybeSingle();
+    try {
+      const students = await studentsAPI.getAll();
+      
+      if (!students || students.length === 0) return;
+      
+      const studentData = students.find((s: any) => s.student_user_id === user?.id);
+      if (!studentData) return;
 
-    if (!studentData) return;
+      const marksData = await marksAPI.getAll({ student_id: studentData.id });
+      
+      if (marksData && Array.isArray(marksData)) {
+        const sortedMarks = marksData
+          .sort((a: any, b: any) => {
+            const dateA = new Date(a.assessment_date).getTime();
+            const dateB = new Date(b.assessment_date).getTime();
+            return dateB - dateA;
+          })
+          .map((mark: any) => ({
+            ...mark,
+            subjects: {
+              subject_name: mark.subject_name,
+              subject_code: mark.subject_code,
+              teacher_id: mark.teacher_id,
+              profiles: {
+                full_name: mark.teacher_name || "Unknown"
+              }
+            }
+          }));
 
-    const { data, error } = await supabase
-      .from("marks")
-      .select(`
-        id,
-        marks,
-        max_marks,
-        assessment_type,
-        assessment_date,
-        subjects(
-          subject_name,
-          subject_code,
-          teacher_id
-        )
-      `)
-      .eq("student_id", studentData.id)
-      .order("assessment_date", { ascending: false });
-
-    if (error) {
+        setMarks(sortedMarks);
+      }
+    } catch (error) {
+      console.error("Failed to fetch marks:", error);
       toast.error("Failed to fetch marks");
-      return;
-    }
-
-    if (data) {
-      const teacherIds = [...new Set(data.map(m => m.subjects.teacher_id))];
-      const { data: teacherProfiles } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .in("id", teacherIds);
-
-      const profileMap = new Map(teacherProfiles?.map(p => [p.id, p.full_name]));
-
-      const marksWithTeachers = data.map(mark => ({
-        ...mark,
-        subjects: {
-          ...mark.subjects,
-          profiles: {
-            full_name: profileMap.get(mark.subjects.teacher_id) || "Unknown"
-          }
-        }
-      }));
-
-      setMarks(marksWithTeachers);
     }
   };
 

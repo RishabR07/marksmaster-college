@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { subjectsAPI, enrollmentsAPI, marksAPI } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -66,13 +66,11 @@ const IAMarks = () => {
   }, [selectedSubject]);
 
   const fetchSubjects = async () => {
-    const { data, error } = await supabase
-      .from("subjects")
-      .select("*")
-      .eq("teacher_id", user?.id);
-
-    if (!error && data) {
-      setSubjects(data);
+    try {
+      const data = await subjectsAPI.getAll(user?.id);
+      setSubjects(data || []);
+    } catch (error) {
+      console.error("Failed to fetch subjects:", error);
     }
   };
 
@@ -180,16 +178,10 @@ const IAMarks = () => {
     try {
       const marksToUpsert = Object.values(marksData).map(data => ({
         ...data,
-        subject_id: selectedSubject,
+        subject: selectedSubject,
       }));
 
-      const { error } = await supabase
-        .from("ia_marks")
-        .upsert(marksToUpsert, {
-          onConflict: "student_id,subject_id"
-        });
-
-      if (error) throw error;
+      await marksAPI.upsert(marksToUpsert);
       toast.success("IA Marks saved successfully!");
     } catch (error: any) {
       toast.error("Failed to save marks: " + error.message);
