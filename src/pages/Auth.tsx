@@ -112,12 +112,12 @@ const Auth = () => {
     try {
       const result = await authAPI.verifyOTP(forgotEmail, otpValue);
       
-      if (result.error) {
-        throw new Error(result.error);
+      if (!result.session) {
+        throw new Error("OTP verification failed");
       }
 
-      // If OTP verified, reset password
-      await authAPI.resetPassword(forgotEmail, newPassword);
+      // If OTP verified, change password using authenticated session
+      await authAPI.changePassword(newPassword);
 
       toast.success("Password reset successfully! Please login with your new password.");
       resetForgotPasswordState();
