@@ -17,7 +17,7 @@ interface IAMark {
   subjects: {
     subject_name: string;
     subject_code: string;
-  };
+  } | null;
 }
 
 interface StudentIAMarksProps {
@@ -60,15 +60,31 @@ export const StudentIAMarks = ({ studentUserId }: StudentIAMarksProps) => {
           course_completion,
           activity_submission,
           synopsis_submission,
-          subjects(
-            subject_name,
-            subject_code
-          )
+          subject_id
         `)
         .eq("student_id", studentData.id);
 
       if (error) throw error;
-      setIAMarks(data || []);
+
+      // Fetch subject details separately
+      if (data && data.length > 0) {
+        const subjectIds = data.map(m => m.subject_id);
+        const { data: subjectsData } = await supabase
+          .from("subjects")
+          .select("id, subject_name, subject_code")
+          .in("id", subjectIds);
+
+        const subjectMap = new Map(subjectsData?.map(s => [s.id, s]));
+
+        const marksWithSubjects = data.map(mark => ({
+          ...mark,
+          subjects: subjectMap.get(mark.subject_id) || null
+        }));
+
+        setIAMarks(marksWithSubjects as IAMark[]);
+      } else {
+        setIAMarks([]);
+      }
     } catch (error: any) {
       toast.error("Failed to fetch IA marks");
       console.error(error);
@@ -104,15 +120,15 @@ export const StudentIAMarks = ({ studentUserId }: StudentIAMarksProps) => {
 
   return (
     <div className="space-y-4">
-      {iaMarks.map((mark) => {
+      {iaMarks.filter(mark => mark.subjects).map((mark) => {
         const total = calculateTotal(mark);
         const percentage = parseFloat(getPercentage(total));
 
         return (
           <Card key={mark.id} className="shadow-[var(--shadow-sm)]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">{mark.subjects.subject_name}</CardTitle>
-              <CardDescription>{mark.subjects.subject_code}</CardDescription>
+              <CardTitle className="text-lg">{mark.subjects?.subject_name}</CardTitle>
+              <CardDescription>{mark.subjects?.subject_code}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Internal Assessments */}
