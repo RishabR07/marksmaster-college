@@ -11,16 +11,25 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 
 
 type ForgotPasswordStep = "email" | "otp" | "newPassword";
+type AuthMode = "login" | "register";
 
 const OTP_EXPIRY_SECONDS = 600; // 10 minutes
 
 const Auth = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
 
   // Login state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  
+  // Register state
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [registerConfirmPassword, setRegisterConfirmPassword] = useState("");
+  const [registerFullName, setRegisterFullName] = useState("");
+  const [registerRole, setRegisterRole] = useState<"student" | "teacher" | "admin">("student");
   // Forgot password state
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotStep, setForgotStep] = useState<ForgotPasswordStep>("email");
@@ -165,6 +174,46 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (!registerFullName) {
+        toast.error("Please enter your full name");
+        setLoading(false);
+        return;
+      }
+
+      if (registerPassword !== registerConfirmPassword) {
+        toast.error("Passwords do not match");
+        setLoading(false);
+        return;
+      }
+
+      if (registerPassword.length < 6) {
+        toast.error("Password must be at least 6 characters");
+        setLoading(false);
+        return;
+      }
+
+      await authAPI.register(registerEmail, registerPassword, registerFullName, registerRole);
+      
+      toast.success("Registration successful! You can now login.");
+      setAuthMode("login");
+      setRegisterEmail("");
+      setRegisterPassword("");
+      setRegisterConfirmPassword("");
+      setRegisterFullName("");
+      setRegisterRole("student");
+      setLoginEmail(registerEmail);
+    } catch (error: any) {
+      toast.error(error.message || "Registration failed");
+    } finally {
+      setLoading(false);
+    }
+  };
   // Forgot Password UI
   if (showForgotPassword) {
     return (
@@ -303,47 +352,135 @@ const Auth = () => {
             <GraduationCap className="h-10 w-10 md:h-12 md:w-12 text-primary" />
           </div>
           <CardTitle className="text-xl md:text-2xl font-bold">KPT Student Portal</CardTitle>
-          <CardDescription className="text-sm">Manage and view data</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="login-email">Email</Label>
-              <Input
-                id="login-email"
-                type="email"
-                placeholder="rishab@gmail.com"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label htmlFor="login-password">Password</Label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setForgotEmail(loginEmail);
-                    setShowForgotPassword(true);
-                  }}
-                  className="text-sm text-primary hover:underline"
-                >
-                  Forgot Password?
-                </button>
-              </div>
-              <Input
-                id="login-password"
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Logging in..." : "Login"}
+          <CardDescription className="text-sm">
+            {authMode === "login" ? "Manage and view data" : "Create your account"}
+          </CardDescription>
+          
+          {/* Auth Mode Tabs */}
+          <div className="flex gap-2 mt-4">
+            <Button
+              variant={authMode === "login" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setAuthMode("login")}
+              className="flex-1"
+            >
+              Login
             </Button>
-          </form>
+            <Button
+              variant={authMode === "register" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setAuthMode("register")}
+              className="flex-1"
+            >
+              Register
+            </Button>
+          </div>
+        </CardHeader>
+        
+        <CardContent>
+          {authMode === "login" ? (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="login-email">Email</Label>
+                <Input
+                  id="login-email"
+                  type="email"
+                  placeholder="test@kpt.edu"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="login-password">Password</Label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotEmail(loginEmail);
+                      setShowForgotPassword(true);
+                    }}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+                <Input
+                  id="login-password"
+                  type="password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Logging in..." : "Login"}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="register-name">Full Name</Label>
+                <Input
+                  id="register-name"
+                  type="text"
+                  placeholder="John Doe"
+                  value={registerFullName}
+                  onChange={(e) => setRegisterFullName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="register-email">Email</Label>
+                <Input
+                  id="register-email"
+                  type="email"
+                  placeholder="john@kpt.edu"
+                  value={registerEmail}
+                  onChange={(e) => setRegisterEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="register-role">Role</Label>
+                <select
+                  id="register-role"
+                  value={registerRole}
+                  onChange={(e) => setRegisterRole(e.target.value as "student" | "teacher" | "admin")}
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                >
+                  <option value="student">Student</option>
+                  <option value="teacher">Teacher</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="register-password">Password</Label>
+                <Input
+                  id="register-password"
+                  type="password"
+                  placeholder="At least 6 characters"
+                  value={registerPassword}
+                  onChange={(e) => setRegisterPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="register-confirm">Confirm Password</Label>
+                <Input
+                  id="register-confirm"
+                  type="password"
+                  placeholder="Confirm your password"
+                  value={registerConfirmPassword}
+                  onChange={(e) => setRegisterConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Creating account..." : "Register"}
+              </Button>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>

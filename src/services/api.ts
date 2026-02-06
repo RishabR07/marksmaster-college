@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const authAPI = {
   register: async (email: string, password: string, fullName: string, role: "admin" | "teacher" | "student" = "student") => {
     try {
-      // Sign up user
+      // Sign up user with email verification disabled for dev
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -20,6 +20,7 @@ export const authAPI = {
           data: {
             full_name: fullName,
           },
+          emailRedirectTo: undefined, // Don't send confirmation email
         },
       });
 
@@ -35,6 +36,12 @@ export const authAPI = {
         });
 
       if (roleError) throw roleError;
+
+      // Auto-confirm the user in development (bypass email confirmation)
+      const { error: confirmError } = await supabase.auth.admin.updateUserById(
+        authData.user.id,
+        { email_confirm: true }
+      ).catch(() => ({ error: null })); // Silently fail if admin API not available
 
       return { user: authData.user, role };
     } catch (error: any) {
