@@ -119,14 +119,7 @@ const Auth = () => {
     setForgotLoading(true);
 
     try {
-      const result = await authAPI.verifyOTP(forgotEmail, otpValue);
-      
-      if (!result.session) {
-        throw new Error("OTP verification failed");
-      }
-
-      // If OTP verified, change password using authenticated session
-      await authAPI.changePassword(newPassword);
+      await authAPI.verifyOTP(forgotEmail, otpValue, newPassword);
 
       toast.success("Password reset successfully! Please login with your new password.");
       resetForgotPasswordState();
@@ -154,10 +147,7 @@ const Auth = () => {
 
     try {
       const result = await authAPI.login(loginEmail, loginPassword);
-
-      // Decode JWT to get user role
-      const userInfo = await authAPI.getCurrentUser();
-      const role = userInfo?.role || "student";
+      const role = result.role || "student";
 
       if (role === "admin") {
         navigate("/admin");

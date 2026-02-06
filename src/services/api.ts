@@ -59,17 +59,20 @@ export const authAPI = {
       if (error) throw error;
       if (!data.user) throw new Error("Login failed");
 
-      // Get user role
-      const { data: roleData } = await supabase
+      // Get user role (if missing, default to student)
+      const { data: roleData, error: roleError } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", data.user.id)
-        .single();
+        .maybeSingle();
 
-      return { 
-        user: data.user, 
-        role: roleData?.role || "student",
-        session: data.session 
+      // If the role query fails for real reasons (RLS, network), surface it
+      if (roleError) throw roleError;
+
+      return {
+        user: data.user,
+        role: (roleData?.role as any) || "student",
+        session: data.session,
       };
     } catch (error: any) {
       throw new Error(error.message || "Login failed");
@@ -103,21 +106,24 @@ export const authAPI = {
         .from("user_roles")
         .select("role")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      return data?.role || null;
+      return (data?.role as any) || null;
     } catch (error) {
       console.error("Failed to fetch user role:", error);
       return null;
     }
   },
 
+  // Password reset via our custom Email OTP backend functions
+  // (sends a 6-digit code, not a magic-link)
   sendOTP: async (email: string) => {
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
+      const { error } = await supabase.functions.invoke("send-otp", {
+        body: { email },
       });
+
       if (error) throw error;
       return { success: true };
     } catch (error: any) {
@@ -125,15 +131,14 @@ export const authAPI = {
     }
   },
 
-  verifyOTP: async (email: string, token: string) => {
+  verifyOTP: async (email: string, otp: string, newPassword: string) => {
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token,
-        type: "email",
+      const { error } = await supabase.functions.invoke("verify-otp", {
+        body: { email, otp, newPassword },
       });
+
       if (error) throw error;
-      return { session: data.session, user: data.user };
+      return { success: true };
     } catch (error: any) {
       throw new Error(error.message || "OTP verification failed");
     }
