@@ -79,7 +79,7 @@ const PREDEFINED_SUBJECTS = {
 };
 
 const TeacherDashboard = () => {
-  const { user, signOut, loading: authLoading } = useAuth();
+  const { user, userRole, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -106,17 +106,25 @@ const TeacherDashboard = () => {
   const [assessmentType, setAssessmentType] = useState("");
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (authLoading) return;
+
+    if (!user) {
       navigate("/auth");
+      return;
     }
-  }, [user, authLoading, navigate]);
+
+    // Prevent non-teachers from using the teacher UI (their inserts will be blocked by backend policies).
+    if (userRole && userRole !== "teacher" && userRole !== "admin") {
+      navigate("/student");
+    }
+  }, [user, userRole, authLoading, navigate]);
 
   useEffect(() => {
-    if (user) {
+    if (user && (userRole === "teacher" || userRole === "admin")) {
       fetchSubjects();
       fetchStudents();
     }
-  }, [user]);
+  }, [user, userRole]);
 
   useEffect(() => {
     if (selectedSubject) {

@@ -5,6 +5,24 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+const withTimeout = async <T>(
+  promise: PromiseLike<T>,
+  ms: number,
+  message = "Request timed out"
+): Promise<T> => {
+  let timeoutId: number | undefined;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new Error(message)), ms);
+  });
+
+  try {
+    return (await Promise.race([Promise.resolve(promise), timeoutPromise])) as T;
+  } finally {
+    if (timeoutId) window.clearTimeout(timeoutId);
+  }
+};
+
 // =====================
 // Auth API
 // =====================
@@ -51,20 +69,25 @@ export const authAPI = {
 
   login: async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+        15000,
+        "Login timed out. Please check your internet and try again."
+      );
 
       if (error) throw error;
       if (!data.user) throw new Error("Login failed");
 
       // Get user role (if missing, default to student)
-      const { data: roleData, error: roleError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", data.user.id)
-        .maybeSingle();
+      const { data: roleData, error: roleError } = await withTimeout(
+        supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", data.user.id)
+          .maybeSingle(),
+        10000,
+        "Fetching your role timed out. Please try again."
+      );
 
       // If the role query fails for real reasons (RLS, network), surface it
       if (roleError) throw roleError;
@@ -102,11 +125,11 @@ export const authAPI = {
 
   getUserRole: async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .maybeSingle();
+      const { data, error } = await withTimeout(
+        supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
+        10000,
+        "Fetching your role timed out. Please refresh and try again."
+      );
 
       if (error) throw error;
       return (data?.role as any) || null;
