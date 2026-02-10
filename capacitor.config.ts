@@ -5,7 +5,8 @@ const config: CapacitorConfig = {
   appName: 'KPT Student Portal',
   webDir: 'dist',
   server: {
-    url: "https://daf5ba28-5d24-484b-a78d-eff57d3f0537.lovableproject.com?forceHideBadge=true",
+    // switched from Lovable project URL to local dev server
+    url: "http://localhost:5173",
     cleartext: true
   },
   android: {

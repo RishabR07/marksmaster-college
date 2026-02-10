@@ -3,13 +3,9 @@ Editing the Code
 
 You can update and maintain this project using any of the methods below.
 
-1. Using the Lovable Editor
+1. Using a Local Development Environment
 
-You can visit the project page in Lovable and make direct edits. Any changes made there will automatically be committed to this repository.
-
-2. Using a Local Development Environment
-
-If you prefer working locally in your preferred IDE, you can clone the repository and push updates. These changes will also sync to the Lovable editor.
+If you prefer working locally in your preferred IDE, clone the repository and push updates. This project uses Supabase for backend services; see `SUPABASE_MIGRATION.md` and the `supabase/` folder for configuration and deployment guidance.
 
 Requirements: Node.js and npm (installing via nvm is recommended)
 
@@ -59,8 +55,8 @@ Tailwind CSS
 
 Deployment
 
-Deployment options are available from the project’s settings within Lovable. You can publish the project directly from the interface.
+For deployment, build the app with `npm run build` and host the generated `dist/` directory on your preferred static host (Netlify, Vercel, Cloudflare Pages, etc.). Backend services use Supabase — consult `SUPABASE_MIGRATION.md` for steps to connect and migrate data.
 
 Custom Domain
 
-A custom domain can be connected through the project’s domain settings. Navigate to Project Settings → Domains and use Connect Domain to set it up.
+Connect a custom domain using your host's domain settings once the site is deployed.

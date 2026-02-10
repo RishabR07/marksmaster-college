@@ -55,11 +55,15 @@ export const authAPI = {
 
       if (roleError) throw roleError;
 
-      // Auto-confirm the user in development (bypass email confirmation)
-      const { error: confirmError } = await supabase.auth.admin.updateUserById(
-        authData.user.id,
-        { email_confirm: true }
-      ).catch(() => ({ error: null })); // Silently fail if admin API not available
+      // Auto-confirm the user via backend function
+      try {
+        await supabase.functions.invoke("confirm-email", {
+          body: { userId: authData.user.id },
+        });
+      } catch (err) {
+        console.error("Failed to confirm email:", err);
+        // Don't throw here - user is created, just can't confirm email yet
+      }
 
       return { user: authData.user, role };
     } catch (error: any) {
@@ -92,9 +96,26 @@ export const authAPI = {
       // If the role query fails for real reasons (RLS, network), surface it
       if (roleError) throw roleError;
 
+      // If role isn't returned due to RLS or timing, fallback to RPC check
+      let resolvedRole: "admin" | "teacher" | "student" | null = (roleData?.role as any) || null;
+
+      if (!resolvedRole) {
+        try {
+          const { data: isAdmin, error: adminErr } = await supabase.rpc("has_role", { _role: "admin", _user_id: data.user.id });
+          if (!adminErr && Boolean(isAdmin)) {
+            resolvedRole = "admin";
+          } else {
+            const { data: isTeacher, error: teacherErr } = await supabase.rpc("has_role", { _role: "teacher", _user_id: data.user.id });
+            if (!teacherErr && Boolean(isTeacher)) resolvedRole = "teacher";
+          }
+        } catch (e) {
+          // ignore RPC failures and fallback to student
+        }
+      }
+
       return {
         user: data.user,
-        role: (roleData?.role as any) || "student",
+        role: resolvedRole || "student",
         session: data.session,
       };
     } catch (error: any) {
