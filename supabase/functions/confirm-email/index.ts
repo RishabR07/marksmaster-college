@@ -30,7 +30,7 @@ serve(async (req) => {
 
     // Auto-confirm the email
     const { error } = await supabase.auth.admin.updateUserById(userId, {
-      email_confirmed_at: new Date().toISOString(),
+      email_confirm: true,
     });
 
     if (error) {
