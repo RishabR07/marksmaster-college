@@ -82,42 +82,32 @@ const IAMarks = () => {
     if (!selectedSubject) return;
 
     // Fetch enrolled students (only 3rd year / final year)
-    const { data: enrollments, error: enrollmentError } = await supabase
+    const { data: enrollments, error } = await supabase
       .from("enrollments")
-      .select("id, student_id")
+      .select(`
+        id,
+        student_id,
+        students!inner(
+          id,
+          roll_number,
+          student_user_id,
+          semester
+        )
+      `)
       .eq("subject_id", selectedSubject);
 
-    if (enrollmentError) {
+    if (error) {
       toast.error("Failed to fetch students");
       return;
     }
 
     if (enrollments) {
-      const studentIds = enrollments.map((e: any) => e.student_id);
-      if (studentIds.length === 0) {
-        setEnrolledStudents([]);
-        setMarksData({});
-        return;
-      }
-
-      const { data: studentsData, error: studentsError } = await supabase
-        .from("students")
-        .select("id, roll_number, student_user_id, semester")
-        .in("id", studentIds);
-
-      if (studentsError) {
-        toast.error("Failed to fetch students");
-        return;
-      }
-
-      const studentMap = new Map((studentsData || []).map((s: any) => [s.id, s]));
-
       // Filter for 3rd year students (semester 5 or 6)
-      const thirdYearEnrollments = enrollments
-        .map((e: any) => studentMap.get(e.student_id))
-        .filter((s: any) => s && (s.semester >= 5 || s.semester === null));
+      const thirdYearEnrollments = enrollments.filter(
+        (e: any) => e.students.semester >= 5 || e.students.semester === null
+      );
 
-      const userIds = thirdYearEnrollments.map((s: any) => s.student_user_id);
+      const userIds = thirdYearEnrollments.map((e: any) => e.students.student_user_id);
       const { data: profilesData } = await supabase
         .from("profiles")
         .select("id, full_name")
@@ -125,12 +115,12 @@ const IAMarks = () => {
 
       const profileMap = new Map(profilesData?.map(p => [p.id, p.full_name]));
 
-      const students = thirdYearEnrollments.map((student: any) => ({
-        id: student.id,
-        roll_number: student.roll_number,
-        student_user_id: student.student_user_id,
+      const students = thirdYearEnrollments.map((enrollment: any) => ({
+        id: enrollment.students.id,
+        roll_number: enrollment.students.roll_number,
+        student_user_id: enrollment.students.student_user_id,
         profiles: {
-          full_name: profileMap.get(student.student_user_id) || "Unknown"
+          full_name: profileMap.get(enrollment.students.student_user_id) || "Unknown"
         }
       }));
 
