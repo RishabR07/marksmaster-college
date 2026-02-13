@@ -306,15 +306,29 @@ const AdminDashboard = () => {
         return user;
       });
 
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        throw sessionError;
+      }
+      if (!sessionData.session) {
         throw new Error("Not authenticated");
+      }
+
+      const { error: authUserError } = await supabase.auth.getUser();
+      if (authUserError) {
+        throw new Error("Session expired. Please sign in again.");
+      }
+
+      // Re-read session after user validation to avoid stale tokens.
+      const { data: refreshedSessionData, error: refreshedSessionError } = await supabase.auth.getSession();
+      if (refreshedSessionError || !refreshedSessionData.session?.access_token) {
+        throw new Error("Unable to get a valid auth token. Please sign in again.");
       }
 
       const { data, error } = await supabase.functions.invoke('bulk-create-users', {
         body: { users },
         headers: {
-          Authorization: `Bearer ${session.session.access_token}`
+          Authorization: `Bearer ${refreshedSessionData.session.access_token}`
         }
       });
 
@@ -339,8 +353,20 @@ const AdminDashboard = () => {
       }
 
     } catch (error: any) {
-      toast.error("Import failed: " + error.message);
-      console.error("Bulk import error:", error);
+      let details = "";
+      try {
+        const response = error?.context;
+        if (response && typeof response.json === "function") {
+          const body = await response.json();
+          details = body?.error || body?.message || "";
+        }
+      } catch {
+        // ignore parse errors and fall back to generic message
+      }
+
+      const message = details || error?.message || "Unknown error";
+      toast.error("Import failed: " + message);
+      console.error("Bulk import error:", error, details ? { details } : "");
     } finally {
       setImporting(false);
     }

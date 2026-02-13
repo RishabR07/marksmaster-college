@@ -5,6 +5,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+type AppRole = "admin" | "teacher" | "student";
+
 const withTimeout = async <T>(
   promise: PromiseLike<T>,
   ms: number,
@@ -22,6 +24,9 @@ const withTimeout = async <T>(
     if (timeoutId) window.clearTimeout(timeoutId);
   }
 };
+
+const isTimeoutError = (error: unknown) =>
+  error instanceof Error && error.message.toLowerCase().includes("timed out");
 
 // =====================
 // Auth API
@@ -73,31 +78,50 @@ export const authAPI = {
 
   login: async (email: string, password: string) => {
     try {
-      const { data, error } = await withTimeout(
-        supabase.auth.signInWithPassword({ email, password }),
-        15000,
-        "Login timed out. Please check your internet and try again."
-      );
+      const performLogin = () => supabase.auth.signInWithPassword({ email, password });
+
+      let loginResult: Awaited<ReturnType<typeof performLogin>>;
+      try {
+        loginResult = await withTimeout(
+          performLogin(),
+          30000,
+          "Login timed out. Please check your internet and try again."
+        );
+      } catch (firstError) {
+        if (!isTimeoutError(firstError)) throw firstError;
+
+        // One retry for unstable/slow networks before failing.
+        loginResult = await withTimeout(
+          performLogin(),
+          45000,
+          "Login timed out. Please check your internet and try again."
+        );
+      }
+
+      const { data, error } = loginResult;
 
       if (error) throw error;
       if (!data.user) throw new Error("Login failed");
 
-      // Get user role (if missing, default to student)
-      const { data: roleData, error: roleError } = await withTimeout(
-        supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", data.user.id)
-          .maybeSingle(),
-        10000,
-        "Fetching your role timed out. Please try again."
-      );
+      // Resolve role best-effort only. Never fail login if role lookup is slow.
+      let resolvedRole: AppRole | null = null;
+      try {
+        const { data: roleData, error: roleError } = await withTimeout(
+          supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", data.user.id)
+            .maybeSingle(),
+          10000,
+          "Fetching your role timed out. Please try again."
+        );
 
-      // If the role query fails for real reasons (RLS, network), surface it
-      if (roleError) throw roleError;
-
-      // If role isn't returned due to RLS or timing, fallback to RPC check
-      let resolvedRole: "admin" | "teacher" | "student" | null = (roleData?.role as any) || null;
+        if (!roleError && roleData?.role) {
+          resolvedRole = roleData.role as AppRole;
+        }
+      } catch {
+        // ignore and fallback to RPC checks below
+      }
 
       if (!resolvedRole) {
         try {
@@ -108,7 +132,7 @@ export const authAPI = {
             const { data: isTeacher, error: teacherErr } = await supabase.rpc("has_role", { _role: "teacher", _user_id: data.user.id });
             if (!teacherErr && Boolean(isTeacher)) resolvedRole = "teacher";
           }
-        } catch (e) {
+        } catch {
           // ignore RPC failures and fallback to student
         }
       }
@@ -145,6 +169,20 @@ export const authAPI = {
   },
 
   getUserRole: async (userId: string) => {
+    const resolveRoleViaRpc = async (): Promise<AppRole | null> => {
+      try {
+        const { data: isAdmin, error: adminErr } = await supabase.rpc("has_role", { _role: "admin", _user_id: userId });
+        if (!adminErr && Boolean(isAdmin)) return "admin";
+
+        const { data: isTeacher, error: teacherErr } = await supabase.rpc("has_role", { _role: "teacher", _user_id: userId });
+        if (!teacherErr && Boolean(isTeacher)) return "teacher";
+
+        return null;
+      } catch {
+        return null;
+      }
+    };
+
     try {
       const { data, error } = await withTimeout(
         supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
@@ -153,10 +191,18 @@ export const authAPI = {
       );
 
       if (error) throw error;
-      return (data?.role as any) || null;
-    } catch (error) {
-      console.error("Failed to fetch user role:", error);
+      if (data?.role) return data.role as AppRole;
+
+      // Fallback when row isn't immediately visible due RLS timing/session recovery.
+      const roleFromRpc = await resolveRoleViaRpc();
+      if (roleFromRpc) return roleFromRpc;
+
       return null;
+    } catch (error) {
+      if (!isTimeoutError(error)) {
+        console.error("Failed to fetch user role:", error);
+      }
+      return await resolveRoleViaRpc();
     }
   },
 

@@ -181,44 +181,59 @@ const TeacherDashboard = () => {
       return;
     }
 
-    const { data, error } = await supabase
+    const { data: enrollmentRows, error: enrollmentError } = await supabase
       .from("enrollments")
-      .select(`
-        id,
-        student_id,
-        students!inner(
-          id,
-          roll_number,
-          department,
-          student_user_id
-        )
-      `)
+      .select("id, student_id")
       .eq("subject_id", selectedSubject);
 
-    if (error) {
+    if (enrollmentError) {
       toast.error("Failed to fetch enrolled students");
       return;
     }
 
-    if (data) {
-      const userIds = data.map((e: any) => e.students.student_user_id);
+    if (enrollmentRows) {
+      const studentIds = enrollmentRows.map((e: any) => e.student_id);
+      if (studentIds.length === 0) {
+        setEnrolledStudents([]);
+        return;
+      }
+
+      const { data: studentsData, error: studentsError } = await supabase
+        .from("students")
+        .select("id, roll_number, department, student_user_id")
+        .in("id", studentIds);
+
+      if (studentsError) {
+        toast.error("Failed to fetch enrolled students");
+        return;
+      }
+
+      const userIds = studentsData?.map((s: any) => s.student_user_id) || [];
       const { data: profilesData } = await supabase
         .from("profiles")
         .select("id, full_name")
         .in("id", userIds);
 
       const profileMap = new Map(profilesData?.map(p => [p.id, p.full_name]));
+      const studentMap = new Map((studentsData || []).map((s: any) => [s.id, s]));
 
-      const enrolled = data.map((enrollment: any) => ({
-        enrollment_id: enrollment.id,
-        id: enrollment.students.id,
-        roll_number: enrollment.students.roll_number,
-        department: enrollment.students.department,
-        student_user_id: enrollment.students.student_user_id,
-        profiles: {
-          full_name: profileMap.get(enrollment.students.student_user_id) || "Unknown"
-        }
-      }));
+      const enrolled = enrollmentRows
+        .map((enrollment: any) => {
+          const student = studentMap.get(enrollment.student_id);
+          if (!student) return null;
+
+          return {
+            enrollment_id: enrollment.id,
+            id: student.id,
+            roll_number: student.roll_number,
+            department: student.department,
+            student_user_id: student.student_user_id,
+            profiles: {
+              full_name: profileMap.get(student.student_user_id) || "Unknown"
+            }
+          };
+        })
+        .filter(Boolean) as EnrolledStudent[];
 
       setEnrolledStudents(enrolled);
     }

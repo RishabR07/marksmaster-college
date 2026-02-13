@@ -49,9 +49,11 @@ Deno.serve(async (req) => {
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .limit(1)
       .maybeSingle()
 
-    if (roleError || !roleData || roleData.role !== 'admin') {
+    if (roleError || !roleData) {
       throw new Error('User is not an admin')
     }
 
@@ -168,11 +170,18 @@ Deno.serve(async (req) => {
 
   } catch (error: any) {
     console.error('Bulk import error:', error)
+    const status =
+      error?.message === 'Unauthorized' ||
+      error?.message === 'Missing authorization header' ||
+      error?.message === 'User is not an admin'
+        ? 401
+        : 400
+
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
+        status
       }
     )
   }
