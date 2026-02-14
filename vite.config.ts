@@ -42,6 +42,7 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
+        navigateFallback: "/",
         runtimeCaching: [
           {
             // match any Supabase project host (projectid.supabase.co)
@@ -54,6 +55,11 @@ export default defineConfig(({ mode }) => ({
                 maxAgeSeconds: 60 * 60 * 24 // 24 hours
               }
             }
+          },
+          {
+            // Don't cache auth requests to avoid 404s
+            urlPattern: /^https:\/\/[A-Za-z0-9-]+\.supabase\.co\/auth\/v1\/.*/i,
+            handler: "NetworkOnly"
           }
         ]
       }

@@ -146,11 +146,11 @@ export const authAPI = {
 
   getUserRole: async (userId: string) => {
     try {
-      const { data, error } = await withTimeout(
-        supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
-        10000,
-        "Fetching your role timed out. Please refresh and try again."
-      );
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
 
       if (error) throw error;
       return (data?.role as any) || null;
