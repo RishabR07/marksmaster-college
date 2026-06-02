@@ -5,6 +5,23 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+type AuthUserPayload = {
+  id: string;
+  [key: string]: unknown;
+};
+
+type PasswordTokenResponse = {
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  expires_at?: number;
+  token_type?: string;
+  user?: AuthUserPayload;
+  error?: string;
+  error_description?: string;
+  msg?: string;
+};
+
 const withTimeout = async <T>(
   promise: PromiseLike<T>,
   ms: number,
@@ -41,7 +58,7 @@ const signInWithPasswordDirect = async (email: string, password: string) => {
       signal: controller.signal,
     });
 
-    const payload = (await response.json().catch(() => ({}))) as Record<string, string | number | object | null | undefined>;
+    const payload = (await response.json().catch(() => ({}))) as PasswordTokenResponse;
 
     if (!response.ok) {
       throw new Error(payload.error_description || payload.msg || payload.error || "Invalid login credentials");
