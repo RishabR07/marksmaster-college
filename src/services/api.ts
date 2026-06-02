@@ -41,7 +41,7 @@ const signInWithPasswordDirect = async (email: string, password: string) => {
       signal: controller.signal,
     });
 
-    const payload = await response.json().catch(() => ({}));
+    const payload = (await response.json().catch(() => ({}))) as Record<string, string | number | object | null | undefined>;
 
     if (!response.ok) {
       throw new Error(payload.error_description || payload.msg || payload.error || "Invalid login credentials");
@@ -72,8 +72,8 @@ const signInWithPasswordDirect = async (email: string, password: string) => {
       },
       error: null,
     };
-  } catch (error: any) {
-    if (error?.name === "AbortError") {
+  } catch (error: unknown) {
+    if (error instanceof DOMException && error.name === "AbortError") {
       throw new Error("Login timed out. Please check your internet and try again.");
     }
     throw error;
