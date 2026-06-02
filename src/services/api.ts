@@ -5,6 +5,23 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+type AuthUserPayload = {
+  id: string;
+  [key: string]: unknown;
+};
+
+type PasswordTokenResponse = {
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  expires_at?: number;
+  token_type?: string;
+  user?: AuthUserPayload;
+  error?: string;
+  error_description?: string;
+  msg?: string;
+};
+
 const withTimeout = async <T>(
   promise: PromiseLike<T>,
   ms: number,
@@ -20,6 +37,65 @@ const withTimeout = async <T>(
     return (await Promise.race([Promise.resolve(promise), timeoutPromise])) as T;
   } finally {
     if (timeoutId) window.clearTimeout(timeoutId);
+  }
+};
+
+const signInWithPasswordDirect = async (email: string, password: string) => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 45000);
+
+  try {
+    const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: {
+        apikey: supabaseAnonKey,
+        authorization: `Bearer ${supabaseAnonKey}`,
+        "content-type": "application/json;charset=UTF-8",
+      },
+      body: JSON.stringify({ email, password, gotrue_meta_security: {} }),
+      signal: controller.signal,
+    });
+
+    const payload = (await response.json().catch(() => ({}))) as PasswordTokenResponse;
+
+    if (!response.ok) {
+      throw new Error(payload.error_description || payload.msg || payload.error || "Invalid login credentials");
+    }
+
+    if (!payload.access_token || !payload.refresh_token || !payload.user) {
+      throw new Error("Login failed. Please try again.");
+    }
+
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: payload.access_token,
+      refresh_token: payload.refresh_token,
+    });
+
+    if (sessionError) throw sessionError;
+
+    return {
+      data: {
+        user: payload.user,
+        session: {
+          access_token: payload.access_token,
+          refresh_token: payload.refresh_token,
+          expires_in: payload.expires_in,
+          expires_at: payload.expires_at,
+          token_type: payload.token_type,
+          user: payload.user,
+        },
+      },
+      error: null,
+    };
+  } catch (error: unknown) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("Login timed out. Please check your internet and try again.");
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
   }
 };
 
@@ -73,11 +149,7 @@ export const authAPI = {
 
   login: async (email: string, password: string) => {
     try {
-      const { data, error } = await withTimeout(
-        supabase.auth.signInWithPassword({ email, password }),
-        15000,
-        "Login timed out. Please check your internet and try again."
-      );
+      const { data, error } = await signInWithPasswordDirect(email, password);
 
       if (error) throw error;
       if (!data.user) throw new Error("Login failed");
