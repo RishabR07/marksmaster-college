@@ -56,11 +56,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (_event, session) => {
         if (session?.user) {
           setUser(session.user);
-          const role = await authAPI.getUserRole(session.user.id);
-          setUserRole(role as "admin" | "teacher" | "student" || "student");
+          setUserRole("student");
+
+          window.setTimeout(() => {
+            void authAPI.getUserRole(session.user.id).then((role) => {
+              setUserRole((role as "admin" | "teacher" | "student") || "student");
+            });
+          }, 0);
         } else {
           setUser(null);
           setUserRole(null);
