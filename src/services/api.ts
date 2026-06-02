@@ -68,10 +68,14 @@ const signInWithPasswordDirect = async (email: string, password: string) => {
       throw new Error("Login failed. Please try again.");
     }
 
-    const { error: sessionError } = await supabase.auth.setSession({
-      access_token: payload.access_token,
-      refresh_token: payload.refresh_token,
-    });
+    const { error: sessionError } = await withTimeout(
+      supabase.auth.setSession({
+        access_token: payload.access_token,
+        refresh_token: payload.refresh_token,
+      }),
+      10000,
+      "Saving your login session timed out. Please try again."
+    );
 
     if (sessionError) throw sessionError;
 
